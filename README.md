@@ -5,7 +5,7 @@
 ## 课程
 
 - [AI Native 产品设计实践](courses/ai-native-product-design-practice/index.html)
-- [服务端 Agent 开发实践](courses/go-agent-engineering/index.html)
+- [全栈 Agent 开发实践](courses/go-agent-engineering/index.html)
 - [DSH 插件开发](courses/dsh-plugin/index.html)
 
 ## 示例项目
