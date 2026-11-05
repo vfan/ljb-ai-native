@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>第 4 章：插件如何与 dsh 交互（事件 / 工具 / 服务） · DSH 插件开发</title>
+    <meta name="description" content="监听事件、注册工具、声明服务依赖——把插件的三种交互方式各写一遍。" />
+    <link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" />
+    <link rel="stylesheet" href="../../../assets/css/main.css" />
+    <link rel="stylesheet" href="../../../assets/css/dsh-plugin.css" />
+  </head>
+  <body data-course="dsh-plugin" data-chapter="04" class="dsh-course-page dsh-chapter-page">
+    <header class="topbar">
+      <a class="brand" href="../../../index.html"><span class="brand-mark">插</span><span>DSH 插件开发</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">Chapter 4 · 事件与工具</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="chapter-layout dsh-layout">
+      <nav class="chapter-nav" aria-label="本页内容"><p>本章内容</p><a href="#s1">事件：插件如何观察宿主</a>
+        <a href="#s2">工具：插件如何向模型提供能力</a>
+        <a href="#s3">服务与 inject：apply 什么时候才被调用</a>
+        <a href="#s4">本章排错速查（差异项）</a>
+        <a href="#s5">练习汇总</a>
+        <a href="#takeaway">带走句</a></nav>
+      <article class="chapter dsh-chapter">
+        <header class="chapter-header">
+          <p class="eyebrow">CHAPTER 04 · EVENTS / TOOLS / INJECT</p>
+          <p class="page-number">04</p>
+          <h1>插件如何<br /><em>与 dsh 交互</em></h1>
+          <p class="lead">监听事件、注册工具、声明服务依赖——把插件的三种交互方式各写一遍。</p>
+          <p>本章处理七环节图的<strong>第 4–6 格：注册、触发、执行</strong>。全章分三节，每节末尾有小练习和一个定位题；卡住时先确认卡在哪一节，再往下问。</p>
+          <ul><li><strong>4A 事件</strong>：插件如何观察宿主（第 4–5 格的监听侧）</li><li><strong>4B 工具</strong>：插件如何向模型提供能力（第 4–6 格的工具侧）</li><li><strong>4C 服务与 inject</strong>：<code class="inline-code">apply</code> 什么时候才被调用（第 3 格的依赖条件）</li></ul>
+          <p>两个贯穿案例：<strong>工具日志插件</strong>（监听事件）和 <strong>greet 工具插件</strong>（注册工具）。它们互不引用——把它们连起来的是宿主发布的事件和提供的工具服务。</p>
+          <div class="dsh-stage-map" aria-label="本章对应的七环节"><span class="dsh-stage-label">七环节</span><div class="dsh-stage-track"><span class="dsh-stage"><b>1</b>安装</span><span class="dsh-stage"><b>2</b>加载</span><span class="dsh-stage active"><b>3</b>初始化</span><span class="dsh-stage active"><b>4</b>注册</span><span class="dsh-stage active"><b>5</b>触发</span><span class="dsh-stage active"><b>6</b>执行</span><span class="dsh-stage"><b>7</b>展示</span></div></div>
+        </header>
+
+        <section id="s1"><p class="section-kicker">4A</p><h2>事件：插件如何观察宿主</h2><h3>概念</h3><p><code class="inline-code">apply(ctx)</code> 的 <code class="inline-code">ctx</code> 由框架传入，是插件与宿主交互的入口。<code class="inline-code">ctx</code> 不是装好所有能力的全局对象：某个服务能否使用，取决于当前组合、<code class="inline-code">inject</code> 声明和作用域。</p><p><code class="inline-code">ctx.on(name, callback)</code> 只登记回调，不立即执行；且回调只观察<strong>注册之后</strong>发生的事件——要查询过去，应读会话记录等历史数据，而不是指望监听补发。</p><p>Cordis 的事件派发有四种模式，<strong>监听器返回值的含义随模式不同</strong>：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>模式</th><th>行为</th><th>返回值规则</th></tr></thead><tbody><tr><td><code class="inline-code">emit</code></td><td>广播通知</td><td>忽略所有返回值</td></tr><tr><td><code class="inline-code">bail</code></td><td>按顺序询问</td><td>第一个非 <code class="inline-code">null</code>/<code class="inline-code">false</code>/<code class="inline-code">undefined</code> 的返回值成为结果并停止后续</td></tr><tr><td><code class="inline-code">serial</code></td><td>顺序执行并等待异步</td><td>停止规则同 <code class="inline-code">bail</code></td></tr><tr><td><code class="inline-code">waterfall</code></td><td>监听器串成处理链</td><td><strong>必须调用 <code class="inline-code">next()</code>，不调用会截断整条链</strong>（故意的拦截设计）</td></tr></tbody></table></div><aside class="dsh-quote"><p>怎么知道某个事件属于哪种模式？<strong>查该事件的声明处或官方事件文档，不要按名字猜。</strong> <code class="inline-code">bail</code>/<code class="inline-code">serial</code> 中返回 <code class="inline-code">false</code> 不是"否决"，它恰好表示"继续下一个"。</p></aside><p>事件名不能凭印象写：<code class="inline-code">tools/result</code> 是 Cordis 运行时事件；<code class="inline-code">tool/result</code> 是持久化会话记录类型，不是事件。要观察后者，应监听 <code class="inline-code">session/event</code> 再检查 <code class="inline-code">event.type</code>。事后的结果事件也不能撤销已执行的操作。</p><h3>操作：工具日志插件</h3><p>创建 <code class="inline-code">scratch-plugin/src/tool-logger.ts</code>：</p><div class="code-block"><div class="code-header"><span>TypeScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-typescript">import type { Context } from '@deepseek-ai/cordis'
+import '@deepseek-ai/dsh-tools'
+
+export const name = 'tool-logger'
+
+export function apply(ctx: Context) {
+  console.log('[tool-logger] 已加载')
+
+  ctx.on('tools/result', (exec) =&gt; {
+    console.log(`[tool-logger] 工具执行结束：${exec.name}`)
+  })
+}</code></pre></div><p>两个要点：</p><ul><li>第二行的<strong>裸导入</strong>（<code class="inline-code">import '@deepseek-ai/dsh-tools'</code>）没有绑定名字，作用是让 TypeScript 认识 <code class="inline-code">tools/result</code> 事件及 <code class="inline-code">exec</code>/<code class="inline-code">result</code> 的类型。删掉它，编辑器可能报"事件不存在"。</li><li>回调实际接收 <code class="inline-code">(exec, result)</code>；本章只用 <code class="inline-code">exec.name</code>。需要判断成功失败或读取内容时用 <code class="inline-code">result</code>（如 <code class="inline-code">result.isError</code>、<code class="inline-code">result.content</code>），字段含义以契约为准。</li></ul><p>在 <code class="inline-code">cordis.yml</code> 中加入条目后重启。终端出现"已加载"只证明第 3 格；要看到工具名称，还需要发生一次真实的工具执行（第 5 格的证据）。</p><h3>4A 练习</h3><p><strong>实现</strong>：让日志插件只记录 <code class="inline-code">greet</code>，其他工具不输出（在回调开头 <code class="inline-code">if (exec.name !== 'greet') return</code>）。</p><p><strong>定位题</strong>：你把裸导入那行删了，程序还能跑吗？编辑器里发生了什么？这说明这行导入影响的是哪一层（运行行为 / 类型检查）？</p></section>
+
+        <section id="s2"><p class="section-kicker">4B</p><h2>工具：插件如何向模型提供能力</h2><h3>概念</h3><p>服务是插件之间公开的能力（如 <code class="inline-code">tools</code> 服务挂在 <code class="inline-code">ctx.tools</code> 上）。<strong>模型不会直接调用 <code class="inline-code">ctx.tools.register</code></strong>：插件注册工具 → 宿主把工具列给模型 → 模型请求调用 → 宿主执行 <code class="inline-code">execute</code>。注册成功只说明工具进入注册表（第 4 格），不等于被调用（第 5 格）。</p><p><code class="inline-code">defineTool</code> 的四段结构：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>部分</th><th>作用</th><th>说明</th></tr></thead><tbody><tr><td><code class="inline-code">name</code> / <code class="inline-code">description</code></td><td>调用标识与描述</td><td>描述帮模型判断何时使用；应说明真实能力，不承诺没实现的行为</td></tr><tr><td><code class="inline-code">parameters</code></td><td>参数契约</td><td><code class="inline-code">defineTool</code> 据此推导并校验 <code class="inline-code">args</code></td></tr><tr><td><code class="inline-code">execute</code></td><td>真正完成工作</td><td>由宿主执行，模型不进入 Node 进程</td></tr><tr><td><code class="inline-code">output.schema</code> + <code class="inline-code">render</code></td><td>返回值结构 + 转成模型可接收的内容块</td><td>先符合 schema，再由 render 包装</td></tr></tbody></table></div><p>工具描述不是权限控制：描述写"只读"而程序实现了写入，写入能力不会消失。</p><h3>操作：注册 greet 工具</h3><p>创建 <code class="inline-code">scratch-plugin/src/greet-tool.ts</code>：</p><div class="code-block"><div class="code-header"><span>TypeScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-typescript">import type { Context } from '@deepseek-ai/cordis'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+
+export const name = 'greet-tool'
+
+export const inject = ['tools']
+
+export function apply(ctx: Context) {
+  ctx.tools.register(defineTool({
+    name: 'greet',
+    description: 'Greet someone by name.',
+    parameters: {
+      name: { type: 'string', required: true, description: 'The name to greet' },
+    },
+    output: {
+      schema: { type: 'string' },
+      render: (_args, value) =&gt; [{ type: 'text', text: value }],
+    },
+    async execute(args) {
+      console.log('[greet-tool] 执行问候')
+      return `Hello, ${args.name}!`
+    },
+  }))
+
+  console.log('[greet-tool] 工具已注册')
+}</code></pre></div><p>在 <code class="inline-code">cordis.yml</code> 同一 <code class="inline-code">insert</code> 下追加条目，重启，然后在对话中输入：</p><aside class="dsh-quote"><p>请实际调用 greet 工具，向 Ada 问好。</p></aside><p>正常调用应同时出现三类证据：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>位置</th><th>观察内容</th><th>对应环节</th></tr></thead><tbody><tr><td>对话过程</td><td>实际的工具调用记录</td><td>5 触发</td></tr><tr><td>宿主终端</td><td><code class="inline-code">[greet-tool] 执行问候</code></td><td>6 执行</td></tr><tr><td>宿主终端</td><td><code class="inline-code">[tool-logger] 工具执行结束：greet</code></td><td>4A 的监听生效</td></tr></tbody></table></div><p><strong>只看到模型输出 "Hello, Ada!"，不能证明工具被调用</strong>——模型也可能直接生成同样的文字。要结合调用记录和终端日志判断。</p><h3>4B 练习</h3><p><strong>实现</strong>：给 <code class="inline-code">greet</code> 增加参数 <code class="inline-code">language</code>（<code class="inline-code">zh</code>/<code class="inline-code">en</code>），据此返回中文或英文问候；未提供按英文。</p><p><strong>定位题</strong>：把 <code class="inline-code">execute</code> 里的 <code class="inline-code">console.log</code> 删掉，注册时仍然打印"工具已注册"。只看启动日志，你能区分"已注册"和"已被调用"吗？用一次真实调用说明你的判断依据。</p></section>
+
+        <section id="s3"><p class="section-kicker">4C</p><h2>服务与 inject：<code class="inline-code">apply</code> 什么时候才被调用</h2><h3>概念</h3><p><code class="inline-code">import</code> 与 <code class="inline-code">inject</code> 解决不同的问题：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>写法</th><th>作用</th><th>未满足时的表现</th></tr></thead><tbody><tr><td><code class="inline-code">import { defineTool } from '...'</code></td><td>从模块导入函数</td><td>模块或导出不存在，<strong>加载阶段报错</strong></td></tr><tr><td><code class="inline-code">export const inject = ['tools']</code></td><td>声明运行必需的服务</td><td>插件<strong>等待，不执行 <code class="inline-code">apply</code></strong></td></tr></tbody></table></div><p><code class="inline-code">defineTool</code> 是从包导入的函数；<code class="inline-code">tools</code> 是运行环境的服务名，不是导入来的对象。<code class="inline-code">inject</code> 让框架在服务就绪后再执行插件入口；必需服务的提供方被卸载时，依赖它的插件会被清理，服务恢复后重新加载。不写 <code class="inline-code">inject</code> 表示依赖可选，用 <code class="inline-code">ctx.get('tools')</code> 查询并自行处理找不到的情况。</p><p>生命周期与清理总表：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>代码位置</th><th>执行时机</th></tr></thead><tbody><tr><td><code class="inline-code">apply</code> 中的初始化语句</td><td>插件激活时执行一次</td></tr><tr><td><code class="inline-code">ctx.on</code> 注册的回调</td><td>对应事件每次发生时</td></tr><tr><td>工具的 <code class="inline-code">execute</code></td><td>该工具被实际调用时</td></tr><tr><td><code class="inline-code">ctx.effect</code> 返回的清理函数</td><td>插件卸载或依赖失效时</td></tr></tbody></table></div><h3>4C 练习</h3><p><strong>实现</strong>：给 tool-logger 也加上 <code class="inline-code">export const inject = ['tools']</code>（它用到 <code class="inline-code">@deepseek-ai/dsh-tools</code> 的类型但不注册工具，观察行为是否变化）。</p><p><strong>定位题</strong>：下面这个版本的 greet-tool，启动后终端<strong>一条日志都没有</strong>，也没有报错：</p><div class="code-block"><div class="code-header"><span>TypeScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-typescript">export const name = 'greet-tool'
+// export const inject = ['tools']   ← 被注释掉了
+
+export function apply(ctx: Context) {
+  console.log('[greet-tool] 已注册')
+  ctx.tools.register(/* ... */)
+}</code></pre></div><p>不查代码的话，症状是"插件像不存在一样"。请判断：卡在七环节图的哪一格？<code class="inline-code">inject</code> 被注释后，<code class="inline-code">apply</code> 还会被调用吗？把日志加在哪里能最早证明你的判断？</p></section>
+
+        <section id="s4"><p class="section-kicker">第 5 节</p><h2>本章排错速查（差异项）</h2><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>现象</th><th>优先检查</th></tr></thead><tbody><tr><td>没有任何加载日志，也无报错</td><td><code class="inline-code">inject</code> 的服务是否就绪（4C 定位题的症状）</td></tr><tr><td>工具有返回，日志插件没输出</td><td>是否监听运行时事件 <code class="inline-code">tools/result</code> 而非记录类型 <code class="inline-code">tool/result</code></td></tr><tr><td>对话出现问候但没有调用记录</td><td>模型可能直接生成文本；确认工具可用且描述匹配</td></tr><tr><td>每条结果打印多次</td><td>补丁或启动参数重复了同一插件条目</td></tr></tbody></table></div></section>
+
+        <section id="s5"><p class="section-kicker">第 6 节</p><h2>练习汇总</h2><ol><li><code class="inline-code">import</code> 导入了什么，<code class="inline-code">inject</code> 在等什么？</li><li><code class="inline-code">execute</code> 由谁触发，模型负责哪一部分？</li><li>在 <code class="inline-code">tools/result</code> 回调里返回 <code class="inline-code">false</code>，为什么不能撤销一次已完成的调用？</li><li><code class="inline-code">waterfall</code> 监听器不调用 <code class="inline-code">next()</code> 会发生什么？这是 bug 还是特性？</li></ol></section>
+
+        <section class="page-summary dsh-summary" id="takeaway"><p class="section-kicker">本章带走句</p><blockquote><p>注册 ≠ 调用——"已注册"的日志只能证明第 4 格；想证明工具真的跑了，去找 <code class="inline-code">execute</code> 的日志。没有 <code class="inline-code">inject</code>，<code class="inline-code">apply</code> 根本不会开始。</p></blockquote></section>
+
+        <footer class="chapter-footer"><a href="chapter-03.html">← 第一个插件</a><a class="next-question" href="chapter-05.html">配置与组合 →</a></footer>
+      </article>
+    </main>
+    <footer>DSH 插件开发 · 从看懂一个插件到交付一个插件</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-typescript.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-json.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-yaml.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-markdown.min.js"></script>
+    <script src="../../../assets/js/code-highlight.js"></script>
+    
+    <script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

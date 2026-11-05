@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chapter 2：Eino、ChatModel 与 Message</title>
+    <link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" />
+    <link rel="stylesheet" href="../../../assets/css/main.css" />
+  </head>
+  <body data-course="agent" data-chapter="02" class="agent-chapter-page">
+    <header class="topbar">
+      <a class="brand" href="../../../index.html"><span class="brand-mark">全</span><span>服务端 Agent 开发实践</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-expanded="false">Chapter 2 · Eino 与 ChatModel</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="chapter-layout agent-layout">
+      <nav class="chapter-nav"><p>本章内容</p><a class="active" href="#what">Eino 是什么</a><a href="#why">为什么需要</a><a href="#components">核心组件</a><a href="#ecosystem">框架概念对照</a><a href="#model">第一次模型调用</a><a href="#messages">消息怎样传入</a><a href="#context">Context 与流式</a><a href="#gin">Eino 与 Gin</a><a href="#practice">小练习</a></nav>
+      <article class="chapter agent-chapter">
+        <header class="chapter-header"><p class="eyebrow">CHAPTER 2 · EINO / CHATMODEL / MESSAGE</p><p class="page-number">02</p><h1>Eino 不让模型更聪明，<br /><em>它让 AI 应用更像工程。</em></h1><p class="lead">先用 Eino 完成一次标准模型调用，再理解组件、消息、上下文和 HTTP 服务之间的边界。</p></header>
+
+        <section id="what"><p class="section-kicker">Eino 是什么</p><h2>Gin 组织 HTTP 服务，Eino 组织模型、知识和行动。</h2><p>Eino 是 CloudWeGo 开源生态中的 Go 大模型应用与 Agent 框架。它把模型调用、提示词、工具和资料检索连接起来。这里的“组件”就是承担一项工作的模块；“编排”就是安排这些模块按什么顺序执行。</p><div class="before-after"><div class="before"><h3>Gin</h3><p>路由、中间件、参数、鉴权和 HTTP 响应。</p><code>HTTP application framework</code></div><div class="after"><h3>Eino</h3><p>模型、消息、Prompt、知识检索、Tool 和编排。</p><code>LLM application framework</code></div></div><p class="teacher-conclusion">不用 Eino 也能调用模型，就像不用 Gin 也能用 <code class="inline-code">net/http</code> 写接口。框架的价值在项目复杂后才会真正出现。</p></section>
+
+        <section id="why"><p class="section-kicker">为什么需要</p><h2>直接调用一次模型 API 很简单，维护完整 AI 应用并不简单。</h2><div class="course-diagram"><pre class="mermaid">flowchart LR
+    U[用户问题] --> P[Prompt]
+    P --> M[模型]
+    M --> D{还需要什么}
+    D -->|实时数据| T[Tool]
+    D -->|私有知识| R[Retriever]
+    D -->|可以回答| A[答案]
+    T --> M
+    R --> M
+    A --> S[保存会话 / 流式返回 / Trace]</pre></div><div class="agent-note-grid"><div><h3>统一组件</h3><p>业务代码面向 ChatModel、Tool、Retriever 等抽象，而不是散落的供应商 HTTP 调用。</p></div><div><h3>统一编排</h3><p>Chain、Graph、Workflow 和 Agent 负责组织步骤、分支、循环和流式数据。</p></div><div><h3>统一治理</h3><p>Callback（回调）是在步骤开始、完成或失败时执行的记录函数；Trace（执行记录）把这些步骤串起来，帮助找到慢在哪里、错在哪里。</p></div></div></section>
+
+        <section id="components"><p class="section-kicker">核心组件地图</p><h2>先知道每个组件解决哪类问题。</h2><table class="comparison"><thead><tr><th>组件</th><th>职责</th><th>学业助手中的位置</th></tr></thead><tbody><tr><th>ChatModel · 模型调用组件</th><td>统一调用对话模型</td><td>理解用户目标并生成回答</td></tr><tr><th>Message · 一条消息</th><td>保留 System、User、Assistant、Tool 角色</td><td>保存一轮对话的语义结构</td></tr><tr><th>ChatTemplate · 消息模板</th><td>管理 Prompt 与变量</td><td>生成成绩分析提示</td></tr><tr><th>Tool</th><td>提供可执行的外部能力</td><td>查询学生、成绩和课程</td></tr><tr><th>Retriever · 检索器</th><td>从知识来源找到相关资料</td><td>检索培养方案和校规</td></tr><tr><th>Embedding · 文本转向量</th><td>把文本转换为语义向量</td><td>支持私有文档的相似度检索</td></tr></tbody></table></section>
+
+        <section id="ecosystem"><p class="section-kicker">框架概念对照</p><h2>学过其他框架时，可以按职责对照。</h2><p>这张表用于迁移已有知识，初次接触 Agent 可以直接继续看下一节的模型调用。</p><table class="comparison"><thead><tr><th>常见 AI 应用概念</th><th>Eino 中的对应能力</th></tr></thead><tbody><tr><th>ChatModel · 模型调用组件</th><td>ChatModel 组件</td></tr><tr><th>PromptTemplate</th><td>ChatTemplate 组件</td></tr><tr><th>Tool</th><td>Tool 组件</td></tr><tr><th>Retriever · 检索器</th><td>Retriever 组件</td></tr><tr><th>RunnableSequence</th><td>Chain 编排</td></tr><tr><th>LangGraph</th><td>Graph / Workflow 编排</td></tr><tr><th>Agent Executor</th><td>ReAct Agent 或 ADK Runner</td></tr></tbody></table><p class="teacher-conclusion">名称不是重点。真正要掌握的是：输入输出类型、组件职责、控制流和失败边界。</p></section>
+
+        <section id="model"><p class="section-kicker">模型初始化</p><h2>项目启动时，根据配置创建一个 ChatModel。</h2><div class="code-block"><div class="code-header"><span>backend/internal/agent/agent.go</span><span>项目源码</span></div><pre><code class="language-go">chatModel, err := openai.NewChatModel(ctx, &amp;openai.ChatModelConfig{
+    Model:   model,
+    APIKey:  apiKey,
+    BaseURL: baseURL,
+})
+if err != nil {
+    return nil, fmt.Errorf("初始化ChatModel失败: %w", err)
+}
+</code></pre></div><p><code class="inline-code">agent.go</code> 不直接读取环境变量，而是接收已经解析好的配置。模型创建、业务服务组装和 HTTP 启动因此保持了清晰边界。</p><div class="code-block"><div class="code-header"><span>.env · 本地开发</span><span>对应 config/config.go</span></div><pre><code class="language-bash">DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1</code></pre></div></section>
+
+
+      <section id="messages"><p class="section-kicker">消息怎样传入</p><h2>告诉模型“按什么规则做”和“这次做什么”。</h2><p><strong>System</strong> 消息放应用规则，<strong>User</strong> 消息放本轮问题，模型返回的 <strong>Assistant</strong> 消息就是回答。沿用前面初始化的 <code class="inline-code">chatModel</code>，在 Go 函数内继续执行：</p><div class="code-block"><div class="code-header"><span>输入消息 → 调用模型 → 读取回答</span><span>调用片段</span></div><pre><code class="language-go">messages := []*schema.Message{
+    schema.SystemMessage("只依据提供的成绩回答；没有数据时说明不知道。"),
+    schema.UserMessage("张三：数学 90 分，数据结构 72 分。哪门课分数较低？"),
+}
+response, err := chatModel.Generate(ctx, messages)
+if err != nil {
+    return fmt.Errorf("生成回答失败: %w", err)
+}
+fmt.Println(response.Content)</code></pre></div><p>应能得到“数据结构较低，72 分”这样的结论，措辞可以不同。这里的成绩由消息提供；接入数据库查询将在第 4 章完成。</p><p class="source-line">调用方式参见 <a href="https://www.cloudwego.io/docs/eino/core_modules/components/chat_model_guide/" target="_blank" rel="noreferrer">Eino ChatModel 使用说明</a>。</p></section>
+
+      <section id="context"><p class="section-kicker">Go 工程习惯</p><h2>让一次模型调用能超时、能取消，也能逐段返回。</h2><p>模型“上下文”指这次交给模型的消息和资料；Go 的 <code class="inline-code">context.Context</code> 用来传递取消信号、超时等请求信息。两者名字相似，用途不同。</p><table class="comparison"><thead><tr><th>能力</th><th>解决什么问题</th></tr></thead><tbody><tr><th>Context</th><td>把超时、取消、Trace 和请求级数据贯穿模型与组件调用</td></tr><tr><th>Generate</th><td>等待完整消息生成后一次返回，最适合第一版和后台任务</td></tr><tr><th>Stream</th><td>边生成边返回，适合聊天页面和长回答</td></tr><tr><th>错误处理</th><td>区分配置错误、模型失败、超时和用户取消</td></tr></tbody></table><div class="code-block"><div class="code-header"><span>请求级超时</span><span>Go</span></div><pre><code class="language-go">ctx, cancel := context.WithTimeout(parent, 20*time.Second)
+defer cancel()
+
+response, err := chatModel.Generate(ctx, messages)
+if errors.Is(err, context.DeadlineExceeded) {
+    return fmt.Errorf("模型调用超时")
+}</code></pre></div></section>
+
+        <section id="gin"><p class="section-kicker">Eino 与 Gin</p><h2>Gin 接收请求，Eino 执行 AI 业务。</h2><div class="course-diagram"><pre class="mermaid">flowchart LR
+    F[前端] -->|HTTP| G[Gin Handler]
+    G --> S[业务 Service]
+    S --> E[Eino App / Agent]
+    E --> M[ChatModel]
+    E --> K[Retriever]
+    E --> T[Tool]
+    E --> S
+    S --> G
+    G --> F</pre></div><div class="page-summary"><p class="section-kicker">本页总结</p><ol><li>Eino 是 Go 大模型应用与 Agent 工程框架，不是模型和 Web 框架。</li><li>组件解决单项能力，编排负责把组件组织成应用。</li><li>Message 的角色结构比字符串拼接更可靠。</li><li>Context、错误处理和流式输出是 Go AI 工程的基础。</li><li>Gin 管 HTTP，Eino 管 AI 调用链，两者处在不同层次。</li></ol><blockquote>下一章：把 Prompt 从字符串中抽出来，并用 Chain 组织第一条确定性 AI 流程。</blockquote></div></section>
+
+
+      <section id="practice"><p class="section-kicker">小练习</p><h2>先给成绩，再撤掉成绩。</h2><ol><li>用上面的消息完成一次调用，记录回答。</li><li>把 User 消息改为“张三的数据结构多少分？”，不提供成绩，再调用一次。</li><li>比较两次回答：第二次是否明确说明缺少数据？</li></ol><p><strong>完成标准：</strong>能指出规则、问题和回答分别在哪个变量中；理解模型不能靠一次调用自动获得业务数据。</p></section>
+
+      <footer class="chapter-footer"><a href="chapter-01-llm-agent-react.html">← Chapter 1：对话与 Agent</a><a class="next-question" href="chapter-03-prompt-chain.html">Chapter 3：Prompt 与 Chain →</a></footer>
+      </article>
+    </main>
+    <footer>服务端 Agent 开发实践 · 从 Eino 编排到效果验证</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script><script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script><script src="../../../assets/vendor/prism/components/prism-go.min.js"></script><script src="../../../assets/vendor/mermaid/mermaid.min.js"></script><script src="../../../assets/js/diagrams.js"></script><script src="../../../assets/js/code-highlight.js"></script><script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

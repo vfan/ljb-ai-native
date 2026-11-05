@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Chapter 7：Chain、Graph 与 Workflow</title><link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" /><link rel="stylesheet" href="../../../assets/css/main.css" /></head>
+  <body data-course="agent" data-chapter="07" class="agent-chapter-page">
+    <header class="topbar"><a class="brand" href="../../../index.html"><span class="brand-mark">全</span><span>服务端 Agent 开发实践</span></a><div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-expanded="false">Chapter 7 · Graph 与 Workflow</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div></header>
+    <main class="chapter-layout agent-layout"><nav class="chapter-nav"><p>本章内容</p><a class="active" href="#choice">三种编排</a><a href="#graph">Graph</a><a href="#workflow">Workflow</a><a href="#agent-or-graph">Agent 还是 Graph</a><a href="#graph-tool">Graph Tool</a><a href="#production">中断与恢复</a><a href="#practice">小练习</a></nav><article class="chapter agent-chapter">
+      <header class="chapter-header"><p class="eyebrow">CHAPTER 7 · PROJECT EXTENSION / GRAPH</p><p class="page-number">07</p><h1>并不是所有复杂流程，<br /><em>都应该交给 Agent 自主决定。</em></h1><p class="lead">当前项目已经用 Chain 固定学生报告流程。本章继续比较 Graph 与 Workflow，判断项目复杂到什么程度才值得升级编排。</p></header>
+
+      <section><div class="diagnosis-callout"><h3>先认识边界，再决定是否改造</h3><p>当前 <code class="inline-code">eino-oa</code> 没有 Graph 和 Workflow。学生报告的线性步骤用 Chain 已经足够；只有出现明确分支、并行、循环或字段级依赖时，才需要继续升级。</p></div></section>
+
+      <section id="choice"><p class="section-kicker">三种编排方式</p><h2>编排就是安排步骤，并把数据交给需要它的步骤。</h2><p>生成学业报告时，需要先准备数据、再生成内容；如果要查询多份资料，还要决定哪些查询可以同时进行，以及查询结果交给谁。Chain、Graph 和 Workflow 都在解决这类步骤安排与数据传递的问题。</p><table class="comparison"><thead><tr><th>方式</th><th>怎么理解</th><th>适合场景</th></tr></thead><tbody><tr><th>Chain</th><td>像流水线，步骤沿一条链向前，上一站的结果交给下一站</td><td>填 Prompt → 调用模型 → 解析报告</td></tr><tr><th>Graph</th><td>像路网，用节点和边表达路线；可以分支、并行，也可以循环</td><td>按问题类型选择查询路径，或检查失败后重试</td></tr><tr><th>Workflow</th><td>按依赖安排步骤，明确上游结果填入下游的哪些字段</td><td>并行查询学生信息和成绩，再合并生成报告</td></tr></tbody></table><p>这些方式并不是互不重叠：Graph 也可以表达线性或并行流程，Workflow 本身也是图。区别在于当前需求适合用哪种方式表达。这里的 Workflow 指 Eino 的 <code class="inline-code">compose.Workflow</code>：它不支持环；其他框架对 Workflow 的定义可能不同。</p><div class="diagnosis-callout"><h3>编排让全局结构可见</h3><p>业务细节留在组件和 Service 中，编排负责表达步骤、依赖和数据如何传递。固定的线性报告流程已经在第三章用 Chain 实现；下面看需求变化后，Graph 和 Workflow 分别怎样表达。</p></div></section>
+
+      <section id="graph"><p class="section-kicker">Graph</p><h2>Graph 像路网：在路口选择路线，也可以绕回来。</h2><p>用户不一定每次都要求生成报告：他可能问成绩，也可能问培养方案。不同问题要查询不同的数据，因此先判断问题类型，再进入对应的处理路径。</p><div class="course-diagram"><pre class="mermaid">flowchart LR
+    Q[用户问题] --> C{问题分类}
+    C -->|实时成绩| T[成绩 Tool]
+    C -->|培养方案| R[规则 Retriever]
+    C -->|通用解释| M[ChatModel]
+    T --> A[生成回答]
+    R --> A
+    M --> A</pre></div><p>每个处理步骤是一个<strong>节点</strong>，节点之间的连接是<strong>边</strong>。分类节点像路口：成绩问题走成绩查询，培养方案问题走知识库查询，最后整理成回答。Graph 的节点可以是 ChatModel、Retriever、ToolsNode、Lambda，也可以嵌套其他 Graph、Chain 或 Workflow。</p><p>如果需求改为“报告格式不合格时重新生成，最多尝试三次”，流程还可以从检查节点回到生成节点：</p><div class="course-diagram"><pre class="mermaid">flowchart LR
+    G[生成报告] --> V{检查格式}
+    V -->|合格| O[输出报告]
+    V -->|不合格且未超过次数| G
+    V -->|达到次数上限| E[返回失败]</pre></div><p>这条回边表达了循环。走哪条路线可以由代码规则判断，也可以由模型输出决定；使用 Graph 本身不意味着必须使用 Agent。</p></section>
+
+      <section id="workflow"><p class="section-kicker">Workflow</p><h2>Workflow 像准备报告材料：明确每份数据从哪里来。</h2><p>生成报告需要学生基本信息和成绩。两项查询都需要学生编号，但彼此不依赖，因此可以并行；两份结果都准备好后，再交给报告生成步骤。</p><div class="course-diagram"><pre class="mermaid">flowchart LR
+    I[输入 StudentID] --> S[查询学生信息]
+    I --> G[查询成绩]
+    S -->|Student 字段| R[生成报告]
+    G -->|Grades 字段| R</pre></div><p>把报告输入想成一张待填写的表：<code class="inline-code">Student</code> 填学生信息查询结果，<code class="inline-code">Grades</code> 填成绩查询结果。Workflow 的<strong>字段映射</strong>就是明确“哪份结果填到哪里”。</p><div class="code-block"><div class="code-header"><span>Workflow 结构示意</span><span>拓展案例，并非仓库文件</span></div><pre><code class="language-go">type ReportInput struct {
+    StudentID uint
+    Question  string
+}
+
+type ReportOutput struct {
+    Answer string
+}
+
+workflow := compose.NewWorkflow[ReportInput, ReportOutput]()
+workflow.
+    AddLambdaNode("load_student", loadStudent).
+    AddInput(compose.START, compose.FromField("StudentID"))
+workflow.
+    AddLambdaNode("load_grades", loadGrades).
+    AddInput(compose.START, compose.FromField("StudentID"))
+workflow.
+    AddLambdaNode("generate_report", generateReport).
+    AddInput("load_student", compose.ToField("Student")).
+    AddInput("load_grades", compose.ToField("Grades"))
+workflow.End().AddInput("generate_report")</code></pre></div><p>这里的 <code class="inline-code">FromField("StudentID")</code> 表示取出输入中的学生编号；<code class="inline-code">ToField("Grades")</code> 表示把查询结果放进后续步骤的成绩字段。字段映射就是明确“哪份结果填到哪里”。</p><p>在这段示例中，两项查询分别从输入取出 <code class="inline-code">StudentID</code>；生成报告则等待并接收两路查询结果。Eino Workflow 的步骤按依赖向前，不支持回到前面形成循环。</p></section>
+
+      <section id="agent-or-graph"><p class="section-kicker">Agent 还是 Graph</p><h2>确定性流程交给编排，不确定选择交给 Agent。</h2><table class="comparison"><thead><tr><th>问题</th><th>优先方案</th><th>原因</th></tr></thead><tbody><tr><th>按固定顺序生成成绩报告</th><td>Chain</td><td>沿用第 3 章的线性流程即可</td></tr><tr><th>分别查询资料，再合并字段生成报告</th><td>Workflow</td><td>多路结果需要按字段汇总</td></tr><tr><th>用户意图不明确，需要决定查什么</th><td>Agent</td><td>模型需要根据上下文选择工具</td></tr><tr><th>按问题类型进入不同知识库</th><td>Graph</td><td>分支清楚，可测试和可观察</td></tr><tr><th>Agent 中执行稳定复杂流程</th><td>Graph Tool</td><td>模型只选择是否调用，内部流程保持确定</td></tr></tbody></table><p class="teacher-conclusion">Agent 负责“选择什么”，Graph/Workflow 负责“选中之后稳定地怎么做”。</p></section>
+
+      <section id="graph-tool"><p class="section-kicker">Graph Tool</p><h2>把稳定的复杂流程包装成一个 Tool。</h2><div class="course-diagram"><pre class="mermaid">flowchart LR
+    A[Agent] -->|调用 generate_report| GT[Graph Tool]
+    GT --> S[并行查询学生与成绩]
+    S --> V[校验数据]
+    V --> G[生成报告]
+    G --> GT
+    GT -->|结构化结果| A</pre></div><p>这样模型不需要编排每一个内部步骤，只需要判断是否调用报告工具。内部流程仍然可以并行、分支、记录 Callback，并单独测试。</p></section>
+
+      <section id="production"><p class="section-kicker">中断、恢复与 Checkpoint</p><h2>长流程需要在安全点暂停，并能从原位置继续。</h2><div class="agent-note-grid"><div><h3>Interrupt · 暂停</h3><p>录入成绩前暂停，把参数展示给老师确认。</p></div><div><h3>Checkpoint · 保存进度</h3><p>保存流程状态，避免确认后从第一步重新执行。</p></div><div><h3>Resume · 继续执行</h3><p>带着确认结果从中断点继续，而不是开启一段无关新会话。</p></div></div><div class="page-summary"><p class="section-kicker">本页总结</p><ol><li>Chain 像流水线；Graph 表达路线、分支和循环；Eino Workflow 关注依赖与字段映射。</li><li>固定的线性步骤用 Chain；出现分支或多路数据依赖，再考虑 Graph/Workflow。</li><li>Graph Tool 可以把复杂稳定流程交给 Agent 选择调用。</li><li>类型对齐、流式转换和 Callback 是 Eino 编排的重要价值。</li><li>写操作与长流程需要 Interrupt、Checkpoint 和 Resume。</li></ol><blockquote>下一章：把这套能力放进真实系统时，如何处理安全、评测、日志和上线？</blockquote></div></section>
+
+
+      <section id="practice"><p class="section-kicker">小练习</p><h2>给三项任务选择流程。</h2><ol><li>填提示词、生成报告、解析 JSON：画成一条顺序执行的链。</li><li>成绩问题查数据库，校规问题找文档：画出两个分支。</li><li>分别查学生和成绩，再一起生成报告：标出两路数据在哪一步合并。</li></ol><p><strong>完成标准：</strong>能解释选择 Chain、Graph 或 Workflow 的原因，指出哪些步骤可以并行、结果汇入哪些字段；知道 Eino Workflow 不支持循环，也不会因为出现多个步骤就直接增加 Agent。</p></section>
+
+      <footer class="chapter-footer"><a href="chapter-06-rag.html">← Chapter 6：Retriever 与 RAG</a><a class="next-question" href="chapter-08-agent-product.html">Chapter 8：工具调用的安全与故障处理 →</a></footer>
+    </article></main>
+    <footer>服务端 Agent 开发实践 · 从 Eino 编排到效果验证</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script><script src="../../../assets/vendor/prism/components/prism-go.min.js"></script><script src="../../../assets/vendor/mermaid/mermaid.min.js"></script><script src="../../../assets/js/diagrams.js"></script><script src="../../../assets/js/code-highlight.js"></script><script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

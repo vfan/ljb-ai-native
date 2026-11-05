@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>第 2 章：运行环境，与全书的地图 · DSH 插件开发</title>
+    <meta name="description" content="分清 Host 与 Client、路径基准与“安装 ≠ 加载”的差别，再拿到全书的地图。" />
+    <link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" />
+    <link rel="stylesheet" href="../../../assets/css/main.css" />
+    <link rel="stylesheet" href="../../../assets/css/dsh-plugin.css" />
+  </head>
+  <body data-course="dsh-plugin" data-chapter="02" class="dsh-course-page dsh-chapter-page">
+    <header class="topbar">
+      <a class="brand" href="../../../index.html"><span class="brand-mark">插</span><span>DSH 插件开发</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">Chapter 2 · 运行环境</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="chapter-layout dsh-layout">
+      <nav class="chapter-nav" aria-label="本页内容"><p>本章内容</p><a href="#s1">Host 与 Client：代码在哪里运行？</a>
+        <a href="#s2">路径：明确相对于哪里</a>
+        <a href="#s3">安装 ≠ 加载</a>
+        <a href="#s4">全书主图：插件的七个环节</a>
+        <a href="#s5">日志去哪里看？</a>
+        <a href="#s6">练习</a>
+        <a href="#takeaway">带走句</a></nav>
+      <article class="chapter dsh-chapter">
+        <header class="chapter-header">
+          <p class="eyebrow">CHAPTER 02 · HOST / CLIENT / PATHS</p>
+          <p class="page-number">02</p>
+          <h1>运行环境，<br /><em>与全书的地图</em></h1>
+          <p class="lead">分清 Host 与 Client、路径基准与“安装 ≠ 加载”的差别，再拿到全书的地图。</p>
+          <div class="dsh-objectives"><p class="section-kicker">本章目标</p><ul><li>分清 Host 与 Client 的职责边界，知道每类日志去哪里看。</li><li>说清楚三种路径解析基准的区别。</li><li>用"插件的七个环节"这张全书主图定位任何插件问题——主图在本章末尾引入，之后每一章开头都会标注自己在图上的位置。</li></ul></div>
+          <p>语言与模块基础不在正课范围内，需要补的同学先读<a href="appendix-a.html">附录 A</a>。</p>
+          <div class="dsh-stage-map" aria-label="本章对应的七环节"><span class="dsh-stage-label">七环节</span><div class="dsh-stage-track"><span class="dsh-stage active"><b>1</b>安装</span><span class="dsh-stage active"><b>2</b>加载</span><span class="dsh-stage active"><b>3</b>初始化</span><span class="dsh-stage"><b>4</b>注册</span><span class="dsh-stage"><b>5</b>触发</span><span class="dsh-stage"><b>6</b>执行</span><span class="dsh-stage"><b>7</b>展示</span></div></div>
+        </header>
+
+        <section id="s1"><p class="section-kicker">第 1 节</p><h2>Host 与 Client：代码在哪里运行？</h2><p>使用 dsh 的 Web 界面时，系统至少涉及两个运行环境：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>部分</th><th>运行位置</th><th>常见职责</th></tr></thead><tbody><tr><td><strong>Host：宿主端</strong></td><td>运行 dsh 的机器上的进程</td><td>工具执行、文件访问、配置和服务</td></tr><tr><td><strong>Client：客户端</strong></td><td>打开 dsh 页面的浏览器</td><td>界面展示、点击交互、浏览器声音播放</td></tr></tbody></table></div><p>以浏览器声音提醒为例的一种分工：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>逻辑</th><th>运行位置</th></tr></thead><tbody><tr><td>提供任务运行状态</td><td>Host</td></tr><tr><td>判断是否提醒</td><td>Client（也可由 Host 判断后推送）</td></tr><tr><td>播放声音、显示设置界面</td><td>Client</td></tr><tr><td>持久保存配置</td><td>对应存储机制负责</td></tr></tbody></table></div><p><strong>逻辑放在哪一端，取决于数据在哪里、需要调用什么 API、希望谁负责执行。</strong> 两端不会因为变量同名就自动同步，必须通过通信接口交换数据。</p><p>两端 API 不同：Node.js 能用 <code class="inline-code">node:fs</code>、无 <code class="inline-code">document</code>；浏览器能用 <code class="inline-code">document</code> 和音频 API（通常需要用户手势才能启动播放）、不能直接用 <code class="inline-code">node:fs</code>。</p><h3>文件访问的边界（重要）</h3><p>直接调用 <code class="inline-code">node:fs</code> 会<strong>绕过</strong> <code class="inline-code">ctx.fs</code> 文件服务，绕过绑定在该服务及相关钩子上的检查与策略。但用 <code class="inline-code">ctx.fs</code> 也不等于自动满足所有安全要求，仍需确认文件目标、调用上下文和实际启用的策略。</p><p>插件自带资源应相对模块或包根解析（如 <code class="inline-code">import.meta.url</code>），<strong>不要依赖 <code class="inline-code">process.cwd()</code></strong>；用户工作区文件则通过 <code class="inline-code">ctx.fs</code> 或用户给出的路径访问。</p></section>
+
+        <section id="s2"><p class="section-kicker">第 2 节</p><h2>路径：明确相对于哪里</h2><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>位置</th><th>含义</th></tr></thead><tbody><tr><td>进程当前工作目录</td><td>进程运行时使用的工作目录</td></tr><tr><td>模块所在目录</td><td>当前代码文件的位置</td></tr><tr><td>用户工作区</td><td>Agent 正在处理的项目位置</td></tr></tbody></table></div><p>三者不一定相同：</p><div class="code-block"><div class="code-header"><span>JavaScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-javascript">await readFile('./message.txt', 'utf8')   // 相对进程 cwd
+import { greet } from './greet.js'          // 相对当前模块文件</code></pre></div><p><strong>同样以 <code class="inline-code">./</code> 开头，解析基准可能不同。</strong> 插件资源、用户输入路径和宿主加载配置还各有解析规则，不能互相套用。第 3 章的"必须写绝对路径"就是这条规则的直接后果。</p></section>
+
+        <section id="s3"><p class="section-kicker">第 3 节</p><h2>安装 ≠ 加载</h2><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>操作</th><th>作用</th></tr></thead><tbody><tr><td>安装包</td><td>将代码和资源放到可解析的位置</td></tr><tr><td>加载插件</td><td>执行入口，注册工具、事件或界面等能力</td></tr></tbody></table></div><p>包已安装却没有效果，按顺序问三个问题：宿主是否加载并执行了插件入口？profile 的 bundles 是否包含它？patch 是否插入了对应条目？</p><p>（profile、bundle、patch 的完整定义见第 5 章，此处先记住"安装之后还有加载这一关"。）</p></section>
+
+        <section id="s4"><p class="section-kicker">第 4 节</p><h2>全书主图：插件的七个环节</h2><p>插件从"一个想法"到"用户看到效果"，要经过七个环节。这张图是全书地图：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th style="text-align:right">环节</th><th>要确认的问题</th><th>本课首次完整走通</th></tr></thead><tbody><tr><td style="text-align:right">1 安装</td><td>包和相关文件是否存在？</td><td>第 8 章</td></tr><tr><td style="text-align:right">2 加载</td><td>当前运行配置是否引用了插件？</td><td>第 3 章</td></tr><tr><td style="text-align:right">3 初始化</td><td>入口是否执行，依赖是否就绪？</td><td>第 3 章</td></tr><tr><td style="text-align:right">4 注册</td><td>工具、监听或界面是否成功注册？</td><td>第 4 章</td></tr><tr><td style="text-align:right">5 触发</td><td>是否发生了预期的调用或事件？</td><td>第 4 章</td></tr><tr><td style="text-align:right">6 执行</td><td>程序是否完成操作？</td><td>第 4 章</td></tr><tr><td style="text-align:right">7 展示</td><td>结果是否返回到正确位置？</td><td>第 6 章</td></tr></tbody></table></div><p>怎么用这张图：</p><ul><li><strong>学</strong>：每章开头标注处理哪几格，学完自查"这几格我能不能独立走通"。</li><li><strong>用</strong>：出问题时，先判断卡在第几格，再动手查那一格的证据。第 8 章会把这张图展开成完整排障流程。</li><li>常见误区是跳格排查："没有听到提示音"直接改播放函数——但问题可能出在第 2 格（压根没加载）。</li></ul></section>
+
+        <section id="s5"><p class="section-kicker">第 5 节</p><h2>日志去哪里看？</h2><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>代码位置</th><th>日志通常出现在哪里</th></tr></thead><tbody><tr><td>Host</td><td>启动终端或宿主日志</td></tr><tr><td>Client</td><td>浏览器开发者工具的 Console</td></tr><tr><td>安装、构建脚本</td><td>对应命令的终端输出</td></tr></tbody></table></div><p>按钮没反应先查 Client 与浏览器错误；入口没执行先查 Host 日志和加载配置。</p><p>三种运行环境不要混：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>环境</th><th>说明</th></tr></thead><tbody><tr><td>源码仓库</td><td>本课程主线，仓库根目录执行 <code class="inline-code">pnpm dsh ...</code></td></tr><tr><td>已安装的 CLI</td><td><code class="inline-code">dsh ...</code></td></tr><tr><td>桌面 App</td><td>界面操作，不能默认终端有 <code class="inline-code">dsh</code></td></tr></tbody></table></div></section>
+
+        <section id="s6"><p class="section-kicker">第 6 节</p><h2>练习</h2><p>不写代码，回答：</p><ol><li>一个 Host 插件和一个 Client 插件各自崩溃时，你分别在什么地方能看到错误？</li><li>"包已安装但没有任何效果"，对应七环节图的哪几格？按什么顺序排查？</li><li><code class="inline-code">readFile('./config.json')</code> 和 <code class="inline-code">import x from './util.js'</code> 里的 <code class="inline-code">./</code> 分别相对什么？</li><li>为什么插件资源不该用 <code class="inline-code">process.cwd()</code> 拼路径？</li></ol></section>
+
+        <section class="page-summary dsh-summary" id="takeaway"><p class="section-kicker">本章带走句</p><blockquote><p>Host 干进程的事，Client 干浏览器的事；<code class="inline-code">./</code> 相对谁要先问清楚；装上了不等于加载了。</p></blockquote></section>
+
+        <footer class="chapter-footer"><a href="chapter-01.html">← 插件是什么</a><a class="next-question" href="chapter-03.html">第一个插件 →</a></footer>
+      </article>
+    </main>
+    <footer>DSH 插件开发 · 从看懂一个插件到交付一个插件</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-typescript.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-json.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-yaml.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-markdown.min.js"></script>
+    <script src="../../../assets/js/code-highlight.js"></script>
+    
+    <script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

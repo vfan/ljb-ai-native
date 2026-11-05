@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>第 8 章：调试、打包与分发 · DSH 插件开发</title>
+    <meta name="description" content="把七环节图展开成排障流程，再把插件打成可以交给别人的包。" />
+    <link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" />
+    <link rel="stylesheet" href="../../../assets/css/main.css" />
+    <link rel="stylesheet" href="../../../assets/css/dsh-plugin.css" />
+  </head>
+  <body data-course="dsh-plugin" data-chapter="08" class="dsh-course-page dsh-chapter-page">
+    <header class="topbar">
+      <a class="brand" href="../../../index.html"><span class="brand-mark">插</span><span>DSH 插件开发</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">Chapter 8 · 调试与分发</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="chapter-layout dsh-layout">
+      <nav class="chapter-nav" aria-label="本页内容"><p>本章内容</p><a href="#s1">要解决的问题</a>
+        <a href="#s2">核心概念</a>
+        <a href="#s3">操作与预期结果</a>
+        <a href="#s4">练习</a>
+        <a href="#takeaway">带走句</a></nav>
+      <article class="chapter dsh-chapter">
+        <header class="chapter-header">
+          <p class="eyebrow">CHAPTER 08 · DEBUG / PACK / SHIP</p>
+          <p class="page-number">08</p>
+          <h1>调试、打包<br /><em>与分发</em></h1>
+          <p class="lead">把七环节图展开成排障流程，再把插件打成可以交给别人的包。</p>
+          <aside class="dsh-note"><p>本章把第 2 章引入的七环节图展开成<strong>完整排障流程</strong>，并走通它的最后一块：<strong>第 1 格，安装</strong>。学完本章，你的插件就能交到别人手上。</p></aside>
+          <div class="dsh-stage-map" aria-label="本章对应的七环节"><span class="dsh-stage-label">七环节</span><div class="dsh-stage-track"><span class="dsh-stage active"><b>1</b>安装</span><span class="dsh-stage active"><b>2</b>加载</span><span class="dsh-stage"><b>3</b>初始化</span><span class="dsh-stage"><b>4</b>注册</span><span class="dsh-stage"><b>5</b>触发</span><span class="dsh-stage"><b>6</b>执行</span><span class="dsh-stage"><b>7</b>展示</span></div></div>
+        </header>
+
+        <section id="s1"><p class="section-kicker">第 1 节</p><h2>要解决的问题</h2><p>插件没有正常工作，怎样定位？本地开发完成后，怎样让别人安装？</p><p><strong>调试的目标不是猜原因，而是找出最早一个没有证据证明成功的环节。</strong>（回忆第 2 章主图：）</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th style="text-align:right">环节</th><th>要确认的问题</th></tr></thead><tbody><tr><td style="text-align:right">1 安装</td><td>包和相关文件是否存在？</td></tr><tr><td style="text-align:right">2 加载</td><td>当前运行配置是否引用了插件？</td></tr><tr><td style="text-align:right">3 初始化</td><td>入口是否执行，依赖是否就绪？</td></tr><tr><td style="text-align:right">4 注册</td><td>工具、监听或界面是否成功注册？</td></tr><tr><td style="text-align:right">5 触发</td><td>是否发生了预期的调用或事件？</td></tr><tr><td style="text-align:right">6 执行</td><td>程序是否完成操作？</td></tr><tr><td style="text-align:right">7 展示</td><td>结果是否返回到正确位置？</td></tr></tbody></table></div><p>"没有听到提示音"只描述最终现象；从<strong>最早一个没有证据的环节</strong>开始查。插件在本地源码正常、安装后失败，就先查第 1、2 格，而不是重写业务逻辑。</p><aside class="dsh-note"><p><strong>环境区分</strong>：<code class="inline-code">pnpm dsh ...</code> 在源码 checkout 根目录；已安装 CLI 用 <code class="inline-code">dsh ...</code>；桌面 App 走界面。三种入口不要混写成同一条命令。</p></aside></section>
+
+        <section id="s2"><p class="section-kicker">第 2 节</p><h2>核心概念</h2><h3>用日志建立执行证据</h3><p>不要只在报错后输出日志，在关键边界留简短标记：入口、事件入口、过滤分支、返回结果。放太多反而难读。处理真实数据时，不要输出完整凭据、文件内容或用户隐私。</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>实际输出</th><th>优先判断</th></tr></thead><tbody><tr><td>没有"入口执行"</td><td>第 2–3 格有问题</td></tr><tr><td>只有"入口执行"</td><td>没发生事件，或监听契约有问题</td></tr><tr><td>出现"已忽略"</td><td>过滤条件不匹配</td></tr><tr><td>进入处理后失败</td><td>查第 6 格的后续逻辑</td></tr></tbody></table></div><h3>区分宿主错误与浏览器错误</h3><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>位置</th><th>优先查看</th></tr></thead><tbody><tr><td>Host</td><td>启动终端、宿主日志</td></tr><tr><td>Client</td><td>浏览器 Console</td></tr><tr><td>网络通信</td><td>浏览器 Network、宿主路由日志</td></tr><tr><td>安装与构建</td><td>对应命令的输出</td></tr></tbody></table></div><h3>用最小复现隔离问题</h3><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>版本</th><th>保留内容</th><th>验证目标</th></tr></thead><tbody><tr><td>A</td><td>只有入口日志</td><td>第 2–3 格：模块能否加载</td></tr><tr><td>B</td><td>加入服务依赖</td><td>第 3 格：依赖能否满足</td></tr><tr><td>C</td><td>加入状态订阅</td><td>第 5 格：能否收到变化</td></tr><tr><td>D</td><td>加入播放逻辑</td><td>第 6 格：能否执行</td></tr><tr><td>E</td><td>恢复设置界面</td><td>第 7 格：交互是否正常</td></tr></tbody></table></div><h3>常见故障 → 排查方向</h3><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>现象</th><th>常见原因</th><th style="text-align:right">卡在哪格</th></tr></thead><tbody><tr><td>找不到模块</td><td>路径错误、包缺失、入口未导出</td><td style="text-align:right">1–2</td></tr><tr><td>插件一直不执行</td><td>必需服务未提供（<code class="inline-code">inject</code>）</td><td style="text-align:right">3</td></tr><tr><td>工具没被调用</td><td>不可用、描述不匹配、模型直接回答</td><td style="text-align:right">5</td></tr><tr><td>配置修改无效</td><td>改错 profile、被后层整体替换</td><td style="text-align:right">2</td></tr><tr><td>操作执行多次</td><td>重复条目、重复监听、清理遗漏</td><td style="text-align:right">4</td></tr><tr><td>界面没显示</td><td>Client 未加载、插槽不匹配</td><td style="text-align:right">7</td></tr><tr><td>本地正常安装后失败</td><td>缺产物或缺依赖</td><td style="text-align:right">1</td></tr><tr><td>升级后失败</td><td>宿主契约变化</td><td style="text-align:right">4</td></tr></tbody></table></div></section>
+
+        <section id="s3"><p class="section-kicker">第 3 节</p><h2>操作与预期结果</h2><h3>从绝对路径到可安装的包</h3><p>绝对路径只适合当前机器。分发时让用户安装一个包，通过包名找到入口。用纯 JavaScript 最小例子（排除构建影响），三个文件各司其职：没有入口，加载找不到代码；没有补丁，装上也不会进入运行配置。</p><p><strong>1. 创建最小插件</strong>（仓库根目录）：</p><p><code class="inline-code">hello-plugin/index.js</code>：</p><div class="code-block"><div class="code-header"><span>JavaScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-javascript">export const name = 'hello-plugin'
+
+export function apply() {
+  console.log('[hello-plugin] 安装版插件已加载')
+}</code></pre></div><p><code class="inline-code">hello-plugin/package.json</code>：</p><div class="code-block"><div class="code-header"><span>JSON</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-json">{
+  "name": "dsh-hello-plugin",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./index.js",
+  "files": ["index.js", "cordis.patch.yml"],
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+}</code></pre></div><p><code class="inline-code">hello-plugin/cordis.patch.yml</code>：</p><div class="code-block"><div class="code-header"><span>YAML</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-yaml">- insert:
+    - id: lesson-installed-hello
+      name: dsh-hello-plugin</code></pre></div><p><code class="inline-code">dsh.bundle.patch</code> 告诉 dsh 这个包提供一层配置；补丁引用的是<strong>包名</strong>，不再是作者机器上的路径。</p><p><strong>2. 安装到独立 profile：</strong></p><div class="code-block"><div class="code-header"><span>Terminal</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-bash">pnpm dsh plugin --profile lesson-pack add ./hello-plugin
+pnpm dsh --profile lesson-pack --dump-config   # 输出应含 dsh-hello-plugin
+pnpm dsh --profile lesson-pack</code></pre></div><p>终端出现 <code class="inline-code">[hello-plugin] 安装版插件已加载</code> 即安装+加载验证通过。</p><p><strong>这个 profile 只验证 Host 日志，不验证 Web 页面。</strong> 新建插件 profile 默认以 base 组合为基础，不含 Web/TUI 前端，不会出现页面；看到日志后 <code class="inline-code">Ctrl+C</code> 结束即可。需要界面的验证（如第 6 章的插件）另配包含 Web 能力的组合。安装与启动必须用同一个 profile；独立 profile 也不隔绝机器级配置，异常时仍要检查叠加。</p><p><strong>3. 用压缩包验证交付内容。</strong> 本地目录安装可能链接到开发目录，意外用到没打包的文件；<strong>压缩包验证才检查实际交付内容</strong>：</p><div class="code-block"><div class="code-header"><span>Terminal</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-bash">cd hello-plugin &amp;&amp; pnpm pack
+tar -tf dsh-hello-plugin-0.1.0.tgz   # 应含 package.json、index.js、cordis.patch.yml
+cd ..
+pnpm dsh plugin --profile lesson-tarball add ./hello-plugin/dsh-hello-plugin-0.1.0.tgz
+pnpm dsh --profile lesson-tarball</code></pre></div><p><strong>4. TypeScript 插件的打包前检查</strong>：构建已完成；<code class="inline-code">main</code>/<code class="inline-code">exports</code> 指向存在的文件；<code class="inline-code">files</code> 含构建产物及必要资源；运行依赖声明完整；压缩包安装不依赖原源码目录。只写 <code class="inline-code">"main": "./lib/index.js"</code> 不会自动生成产物。</p><p><strong>5. 三种分发方式：</strong></p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>方式</th><th>适合场景</th><th>重点</th></tr></thead><tbody><tr><td><code class="inline-code">.tgz</code> 压缩包</td><td>小范围交付</td><td>直接验证实际产物</td></tr><tr><td>npm 包</td><td>持续发布</td><td>包名、版本与发布内容</td></tr><tr><td>Git 仓库</td><td>源码协作</td><td>构建产物与安装脚本（仓库带 <code class="inline-code">build</code> 不代表安装时执行）</td></tr></tbody></table></div><p><strong>6. 版本兼容声明</strong>：记录实际验证过的版本：</p><div class="code-block"><div class="code-header"><span>JSON</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-json">{ "engines": { "dsh": "0.1.1-rc.1" } }</code></pre></div><p>课程基线 <code class="inline-code">0.1.1-rc.1</code> 中，<code class="inline-code">engines.dsh</code> 只作兼容声明，安装器和加载器不强制拦截；<strong>其他版本行为可能不同，请在实际使用的版本上核对，不要外推。</strong>普通 SemVer 范围可能不包含预发布版本：写精确版本，或显式包含预发布。升级时保留上一份可用安装包以便回退。</p><p><strong>7. 卸载并验证：</strong></p><div class="code-block"><div class="code-header"><span>Terminal</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-bash">pnpm dsh plugin --profile lesson-pack remove dsh-hello-plugin</code></pre></div><p>再启动对应 profile，确认日志不再出现。<strong>卸载代码 ≠ 删除用户数据</strong>：真实插件可能留下配置或数据，应在说明中写清楚。</p></section>
+
+        <section id="s4"><p class="section-kicker">第 4 节</p><h2>练习</h2><p>把最小插件改成"启动信息插件"，输出版本号从 <code class="inline-code">package.json</code> 读取（不要在入口里硬编码会漂移的版本号）。完成：本地目录安装 → 打包并检查内容 → 压缩包安装验证 → 卸载验证 → 编写简短说明（安装命令、适用版本、日志位置，以及<strong>卸载后保留什么</strong>）。</p><p>说明要让别人照做时能判断每步是否成功：安装后日志出现，卸载后日志消失。</p></section>
+
+        <section class="page-summary dsh-summary" id="takeaway"><p class="section-kicker">本章带走句</p><blockquote><p>排错就是给七环节图找证据——从最早一个没有证据的环节查起；交付验证以压缩包为准，因为本地目录跑通≠交付物跑通。</p></blockquote></section>
+
+        <footer class="chapter-footer"><a href="chapter-07.html">← 真实案例</a><a class="next-question" href="chapter-09.html">综合项目 →</a></footer>
+      </article>
+    </main>
+    <footer>DSH 插件开发 · 从看懂一个插件到交付一个插件</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-typescript.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-json.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-yaml.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-markdown.min.js"></script>
+    <script src="../../../assets/js/code-highlight.js"></script>
+    
+    <script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Chapter 3：ChatTemplate、Chain 与结构化输出</title><link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" /><link rel="stylesheet" href="../../../assets/css/main.css" /></head>
+  <body data-course="agent" data-chapter="03" class="agent-chapter-page">
+    <header class="topbar"><a class="brand" href="../../../index.html"><span class="brand-mark">全</span><span>服务端 Agent 开发实践</span></a><div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-expanded="false">Chapter 3 · Prompt 与 Chain</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div></header>
+    <main class="chapter-layout agent-layout"><nav class="chapter-nav"><p>本章内容</p><a class="active" href="#prompt">Prompt 工程化</a><a href="#template">ChatTemplate</a><a href="#chain">Chain</a><a href="#output">结构化输出</a><a href="#integration">接入项目</a><a href="#boundary">使用边界</a><a href="#practice">小练习</a></nav><article class="chapter agent-chapter">
+      <header class="chapter-header"><p class="eyebrow">CHAPTER 3 · PROMPT / CHAIN / OUTPUT</p><p class="page-number">03</p><h1>先把一条固定流程做好，<br /><em>再进入会自主决策的 Agent。</em></h1><p class="lead">使用 ChatTemplate 管理 Prompt，用 Chain 串联模板与模型，并让输出变成业务代码可以继续处理的数据。</p></header>
+
+      <section id="prompt"><p class="section-kicker">Prompt 也是代码资产</p><h2>把固定规则和每次变化的数据分开。</h2><p>Prompt（提示词）就是交给模型的任务说明与资料。ChatTemplate（消息模板）把固定文字留下，把姓名、成绩等可变数据留成待填的位置。</p><div class="before-after"><div class="before"><h3>散落拼接</h3><code>prompt := "分析学生：" + name + grades</code><p>角色、变量和规则混在一起，难以复用、测试和版本化。</p></div><div class="after"><h3>模板管理</h3><code>System + User + variables</code><p>消息角色清晰，变量显式，修改 Prompt 不必改动业务流程。</p></div></div><p>Prompt 应像 SQL、接口契约和配置一样被审查。尤其要区分稳定的系统规则、用户输入和外部数据，避免全部拼进同一段字符串。</p></section>
+
+      <section id="template"><p class="section-kicker">ChatTemplate</p><h2>给每次报告使用同一份模板。</h2><p>下面的 <code class="inline-code">{student}</code>、<code class="inline-code">{grades}</code>、<code class="inline-code">{gpa}</code> 是变量位置，由程序填入学生、成绩和平均绩点数据。</p><div class="code-block"><div class="code-header"><span>backend/internal/report/report_prompt.go</span><span>项目源码</span></div><pre><code class="language-go">func NewPrompt() *prompt.DefaultChatTemplate {
+    return prompt.FromMessages(
+        schema.FString,
+        schema.SystemMessage(`你是学业分析助手。
+只能依据程序提供的学生、成绩和 GPA 数据生成报告，不得补写不存在的事实。
+只返回一个合法 JSON 对象，不要使用 Markdown 代码块。
+JSON 必须包含 summary、strengths、weak_courses、next_actions 四个字段。`),
+        schema.UserMessage(`学生数据：
+{student}
+
+成绩数据：
+{grades}
+
+GPA 数据：
+{gpa}
+
+请生成简洁、可执行的学业报告。`),
+    )
+}</code></pre></div><table class="comparison"><thead><tr><th>内容</th><th>放在哪里</th><th>原因</th></tr></thead><tbody><tr><th>角色与事实边界</th><td>System Message</td><td>每次调用都保持一致</td></tr><tr><th>当前任务</th><td>User Message</td><td>表达本轮目标</td></tr><tr><th>学生、成绩、GPA</th><td>模板变量</td><td>由程序显式注入并测试</td></tr><tr><th>数据库原始错误</th><td>不进入 Prompt</td><td>内部错误应由服务端记录和转换</td></tr></tbody></table></section>
+
+      <section id="chain"><p class="section-kicker">Chain</p><h2>Chain 像流水线：上一站的结果交给下一站。</h2><p>用户说“给学生 123 生成一份学业报告”时，系统首先需要准备这个学生的数据。完整过程可以分成两部分：先由工具准备资料，再由 Chain 根据资料生成报告。</p><div class="course-diagram"><pre class="mermaid">flowchart LR
+    U[用户请求报告] --> A[Agent 选择报告工具]
+    A --> T[student_report 工具]
+    T --> S[查询学生信息和成绩并计算 GPA]
+    S --> C[报告 Chain]
+    C --> R[报告返回给 Agent 和用户]</pre></div><p>Agent 根据用户请求选择调用 <code class="inline-code">student_report</code> 工具，并提供学生 ID。工具内部的 Report Service 再通过程序查询学生信息、成绩和 GPA。<strong>这些资料不是模型凭空写出来的，也不是模型在工具内部逐项决定查询的。</strong></p><p>现在把视角放到<strong>资料已经准备好之后</strong>：报告 Chain 接收这些数据，先填好提示词，再交给模型生成内容，最后把模型返回的文字解析成程序可用的数据。</p><div class="course-diagram"><pre class="mermaid">flowchart LR
+    I[学生与成绩] --> P[ChatTemplate]
+    P --> M[ChatModel]
+    M --> J[JSON 解析与校验]
+    J --> O[Report Result]</pre></div><p>在这段报告生成流程中，数据沿着流水线向前走：<strong>上一站处理完，结果交给下一站</strong>。这些步骤的顺序固定，因此用 Chain 表达很自然。Chain 只负责完整任务中的这一段；外层仍然可以由 Agent 判断是否调用报告工具。</p><table class="comparison"><thead><tr><th>阶段</th><th>数据怎样变化</th></tr></thead><tbody><tr><th>输入</th><td>学生信息、成绩和 GPA 等数据</td></tr><tr><th>ChatTemplate</th><td>把数据填入模板，得到交给模型的消息</td></tr><tr><th>ChatModel</th><td>根据消息生成包含报告内容的文本</td></tr><tr><th>解析与校验</th><td>从文本中解析 JSON，得到程序可用的报告结果</td></tr></tbody></table><p>例如，输入中有小明的数学成绩 85 分，模板会把这份数据放进报告任务说明；模型返回报告 JSON 文本；解析后，程序就可以分别读取总结和建议等字段。例子中的数据只是演示，报告仍应以实际提供的数据为准。</p><div class="code-block"><div class="code-header"><span>backend/internal/report/report_chain.go</span><span>项目源码</span></div><pre><code class="language-go">func NewChain(
+    ctx context.Context,
+    chatModel model.BaseChatModel,
+) (compose.Runnable[map[string]any, Result], error) {
+    chain := compose.NewChain[map[string]any, Result]().
+        AppendChatTemplate(NewPrompt()).
+        AppendChatModel(chatModel).
+        AppendLambda(compose.InvokableLambda(parseResult))
+
+    runnable, err := chain.Compile(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("编译学生报告 Chain 失败: %w", err)
+    }
+    return runnable, nil
+}</code></pre></div><p>这段 Chain 按“填模板 → 调模型 → 解析结果”的顺序执行。<code class="inline-code">AppendLambda</code> 接入普通 Go 函数，这里是 <code class="inline-code">parseResult</code>；<code class="inline-code">Compile</code> 将这些步骤组装成可调用的流程。这里的最终输出已经是 Go 的 <code class="inline-code">Result</code>，不是一段需要调用方自行猜测格式的文本。</p></section>
+
+      <section id="output"><p class="section-kicker">结构化输出</p><h2>让程序能分别取出总结、优势、薄弱课程和建议。</h2><p>结构化输出就是把结果放进约定的字段。下面四个字段依次保存总体总结、优势列表、薄弱课程列表和后续建议。</p><div class="code-block"><div class="code-header"><span>backend/internal/report/types.go</span><span>项目源码</span></div><pre><code class="language-go">type Result struct {
+    Summary     string   `json:"summary"`
+    Strengths   []string `json:"strengths"`
+    WeakCourses []string `json:"weak_courses"`
+    NextActions []string `json:"next_actions"`
+}</code></pre></div><div class="diagnosis-callout"><h3>JSON 不是自动可信</h3><p>项目中的 <code class="inline-code">parseResult</code> 会截取 JSON、执行反序列化并检查 <code class="inline-code">summary</code>。结构化输出减少了解析歧义，但程序仍然必须校验模型结果。</p></div></section>
+
+      <section id="integration"><p class="section-kicker">接入项目</p><h2>报告 Chain 最终仍然是 Agent 可以调用的 Tool。</h2><div class="course-diagram"><pre class="mermaid">flowchart LR
+    A[ReAct Agent] -->|student_report| T[Student Report Tool]
+    T --> S[Report Service]
+    S --> D[查询学生 / 成绩 / GPA]
+    D --> C[Report Chain]
+    C --> T
+    T --> A</pre></div><p><code class="inline-code">agent.NewChatAgent</code> 创建报告 Chain 和 Report Service，再把它注册为 <code class="inline-code">student_report</code> Tool。这样固定的报告流程由 Chain 保证，是否调用报告能力仍由 Agent 判断。</p><div class="diagnosis-callout"><h3>稳定性不是免费的</h3><p><code class="inline-code">student_report</code> 内部会额外调用一次模型，因此会增加耗时和 Token 成本。Token 是模型处理文字时使用的小单位，输入和输出的 Token 数通常参与计费。这里保留它，是因为正式报告需要稳定结构；普通查询仍然直接使用细粒度 Tool。</p></div></section>
+
+      <section id="boundary"><p class="section-kicker">Chain 的边界</p><h2>把固定步骤交给 Chain，把工具选择交给 Agent。</h2><table class="comparison"><thead><tr><th>场景</th><th>更合适的方式</th></tr></thead><tbody><tr><th>成绩数据 → Prompt → 模型 → 报告</th><td>Chain</td></tr><tr><th>根据用户请求决定是否调用学生报告工具</th><td>Agent + Tool</td></tr><tr><th>调用报告工具后，查询数据并生成报告</th><td>Tool + Service + Chain</td></tr></tbody></table><div class="page-summary"><p class="section-kicker">本页总结</p><ol><li>Prompt 应被模板化、版本化和测试。</li><li>ChatTemplate 保留消息角色并显式管理变量。</li><li>Chain 适合稳定的线性流程，可以作为 Agent 调用的工具中的一部分。</li><li>结构化输出仍然需要程序校验。</li><li>步骤执行成功之后，还要核对报告中的事实。</li></ol><blockquote>下一章：流程不再固定时，让模型通过 Tool 和 ReAct 决定下一步。</blockquote></div></section>
+
+
+      <section id="practice"><p class="section-kicker">小练习</p><h2>检查一份“格式正确、事实错误”的报告。</h2><p>给定成绩：数学 90 分、数据结构 72 分。模型返回合法 JSON，但把薄弱课程写成“数学”，并建议“弥补缺课”。</p><p>分别检查：字段是否齐全、薄弱课程是否与成绩一致、是否有缺课记录。写出至少一条格式检查和一条事实检查。</p><p><strong>完成标准：</strong>能说明 JSON 解析通过仍可能答错；只能依据成绩提出建议，不能据此断言缺课或某个知识点不会。</p></section>
+
+      <footer class="chapter-footer"><a href="chapter-02-eino-chatmodel.html">← Chapter 2：Eino 与 ChatModel</a><a class="next-question" href="chapter-04-tool-agent.html">Chapter 4：Tool 与 ReAct →</a></footer>
+    </article></main>
+    <footer>服务端 Agent 开发实践 · 从 Eino 编排到效果验证</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script><script src="../../../assets/vendor/prism/components/prism-go.min.js"></script><script src="../../../assets/vendor/mermaid/mermaid.min.js"></script><script src="../../../assets/js/diagrams.js"></script><script src="../../../assets/js/code-highlight.js"></script><script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

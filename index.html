@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Native 课程平台 · 产品设计、Agent 工程与插件开发</title>
+    <meta name="description" content="三门课程与两个可运行项目：AI Native 产品设计、服务端 Agent 开发实践、DSH 插件开发，以及会议行动项评测台与学业助手源码主线。" />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/home.css" />
+  </head>
+  <body class="platform-page" data-no-play>
+    <header class="topbar">
+      <a class="brand" href="index.html"><span class="brand-mark">AI</span><span>AI Native 产品设计与实践系列课</span></a>
+      <div class="topbar-actions">
+        <span class="lesson-label">AI NATIVE COURSE PLATFORM</span>
+        <button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button>
+      </div>
+    </header>
+
+    <main class="platform-main">
+      <section class="platform-hero" aria-labelledby="platform-title">
+        <p class="eyebrow">AI NATIVE · PRODUCT / AGENT / PLUGIN</p>
+        <h1 id="platform-title">从产品判断，<br />到能跑起来的 Agent 与插件</h1>
+      </section>
+
+      <section class="course-catalog" aria-label="课程目录">
+        <article class="course-card">
+          <div class="course-card-main">
+            <p class="course-status">单页课程 · 51 屏 / 11 讲</p>
+            <h3>AI Native 产品设计</h3>
+            <p>从 Demo 跑通到产品可交付：六个观察角度、15 个知识单元、9 个真实产品案例。顺着同一个用户任务，看场景、交互、记忆、指标与评测怎样一起决定产品结构。</p>
+            <div class="course-meta">
+              <span>场景判断</span>
+              <span>交互与信任</span>
+              <span>指标与评测</span>
+              <span>安全与责任</span>
+            </div>
+          </div>
+          <div class="course-card-side">
+            <span>AI NATIVE PRODUCT DESIGN</span>
+            <strong>场景 → 交互 → 评测</strong>
+            <a class="button primary" href="courses/ai-native-product-design-practice/index.html">进入课程 <span>→</span></a>
+          </div>
+        </article>
+
+        <article class="course-card">
+          <div class="course-card-main">
+            <p class="course-status">9 章</p>
+            <h3>服务端 Agent 开发实践</h3>
+            <p>以本仓库的 <a href="examples/eino-oa/README.md">eino-oa 学业助手</a>为主线，用 Go + Eino 在服务端串起 ChatModel、Prompt、Chain、Tool、ReAct、RAG、Graph 与 Skill，补上工具权限和故障处理，再用测试样本与执行记录完成验收。</p>
+            <div class="course-meta">
+              <span>Go + Eino</span>
+              <span>Tool / ReAct</span>
+              <span>RAG / Graph</span>
+              <span>安全 / 测试验收</span>
+            </div>
+          </div>
+          <div class="course-card-side">
+            <span>SERVER-SIDE AGENT ENGINEERING</span>
+            <strong>Model → Agent → Service</strong>
+            <a class="button primary" href="courses/go-agent-engineering/index.html">进入课程 <span>→</span></a>
+          </div>
+        </article>
+
+        <article class="course-card">
+          <div class="course-card-main">
+            <p class="course-status">9 章 + 附录</p>
+            <h3>DSH 插件开发</h3>
+            <p>以“插件的七个环节”为主线：安装、加载、初始化、注册、触发、执行、展示。写出 Host 与 Client 两个半区，读一个已发布的真实插件，最后打包交付一个能装、能验、能定位问题的插件。</p>
+            <div class="course-meta">
+              <span>Host / Client</span>
+              <span>事件与工具</span>
+              <span>配置与插槽</span>
+              <span>调试与分发</span>
+            </div>
+          </div>
+          <div class="course-card-side">
+            <span>DSH PLUGIN DEVELOPMENT</span>
+            <strong>加载 → 注册 → 交付</strong>
+            <a class="button primary" href="courses/dsh-plugin/index.html">进入课程 <span>→</span></a>
+          </div>
+        </article>
+      </section>
+
+      <section class="platform-section" aria-labelledby="project-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">配套项目</p>
+            <h2 id="project-title">两个可以跑起来的配套项目</h2>
+          </div>
+          <p>一个用来练评测，一个是 Go 课程的源码主线。</p>
+        </div>
+
+        <article class="project-card">
+          <div class="project-main">
+            <span class="project-badge">MEETING-EVAL · GO 1.22+</span>
+            <h3>会议行动项评测台</h3>
+            <p>固定评测“从会议记录提取行动项”：两版提示词、14 条边界样本、规则评分 + AI 裁判、版本对比和发布门禁。它把“评什么、怎么评、评完怎么改”做成一个能点开的平台。</p>
+          </div>
+          <div class="project-run">
+            <span class="run-label">本地运行</span>
+            <pre><code>cd examples/meeting-eval
+cp .env.example .env
+# 填写 DEEPSEEK_API_KEY
+go run .
+# http://127.0.0.1:8765</code></pre>
+            <p>复制 <code>.env.example</code> 为 <code>.env</code>，填写 <code>DEEPSEEK_API_KEY</code>（必填）后再启动。</p>
+            <p class="project-readme"><a href="examples/meeting-eval/README.md">查看 README.md 启动说明 →</a></p>
+          </div>
+        </article>
+
+        <article class="project-card">
+          <div class="project-main">
+            <span class="project-badge">EINO-OA · GO + REACT</span>
+            <h3>学业助手源码主线</h3>
+            <p>服务端 Agent 课程逐步拆解的真实项目：Gin + GORM + SQLite 后端、React + Vite 前端、Eino ReAct Agent 与业务工具。课程中的 <code class="inline-code">backend/…</code> 路径都相对于这个目录。</p>
+          </div>
+          <div class="project-run">
+            <span class="run-label">本地运行</span>
+            <pre><code># 终端一：后端 :8080
+cd examples/eino-oa/backend
+cp .env.example .env
+# 填管理员账号与 DEEPSEEK_API_KEY
+go run ./cmd/server
+
+# 终端二：前端 :3000
+cd examples/eino-oa/frontend
+npm install
+npm run dev</code></pre>
+            <p>要求 Go 1.25+、Node.js 20.19+。在 <code>backend/.env</code> 设置管理员账号 <code>ADMIN_USERNAME</code> / <code>ADMIN_PASSWORD</code>（密码必填），并填写 <code>DEEPSEEK_API_KEY</code>（必填）；启动后访问 <code>http://localhost:3000</code>，用该账号登录。</p>
+            <p class="project-readme"><a href="examples/eino-oa/README.md">查看 README.md 启动说明 →</a></p>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer>AI Native 课程平台 · 产品判断、Agent 工程与插件开发</footer>
+    <script src="assets/js/common.js"></script>
+  </body>
+</html>

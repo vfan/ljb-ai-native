@@ -1,0 +1,28 @@
+.context-tree,
+.http-contract,
+.comparison-table { margin: 22px 0; }
+.context-tree { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; padding:1px; border:1px solid var(--line); background:var(--line); }
+.context-tree > div { min-height:92px; padding:18px; background:var(--surface); }
+.context-tree > div:first-child { grid-row:span 2; display:grid; place-content:center; text-align:center; }
+.context-tree strong,.context-tree b,.http-contract b { display:block; color:var(--accent); font:800 13px ui-monospace,monospace; }
+.context-tree strong { font-size:26px; }
+.context-tree span,.http-contract span { display:block; margin-top:8px; color:var(--muted); font-size:13px; line-height:1.7; }
+.http-contract { display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:12px; }
+.http-contract > div { padding:18px; border:1px solid var(--line); border-radius:9px; background:var(--surface); }
+.onion-flow { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px; margin:22px 0; }
+.onion-flow span,.onion-flow strong { padding:11px 14px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font:700 12px ui-monospace,monospace; }
+.onion-flow strong { border-color:var(--accent); background:var(--accent-weak); color:var(--accent); }
+.onion-flow i { color:var(--accent); font-style:normal; font-weight:800; }
+.comparison-table { width:100%; border-collapse:collapse; overflow:hidden; border:1px solid var(--line); border-radius:9px; background:var(--surface); font-size:13px; }
+.comparison-table th,.comparison-table td { padding:12px 14px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+.comparison-table thead th { background:var(--accent-weak); color:var(--accent); font-weight:800; }
+.comparison-table tbody th { color:var(--ink); font-weight:700; }
+.comparison-table tbody td { color:var(--muted); }
+.comparison-table tr:last-child th,.comparison-table tr:last-child td { border-bottom:0; }
+.dark .context-tree > div,.dark .http-contract > div,.dark .onion-flow span,.dark .onion-flow strong,.dark .comparison-table { background:var(--surface); }
+.dark .comparison-table thead th,.dark .onion-flow strong { background:#203c30; }
+@media (max-width:760px) {
+  .context-tree,.http-contract { grid-template-columns:1fr; }
+  .context-tree > div:first-child { grid-row:auto; }
+  .comparison-table { display:block; overflow-x:auto; white-space:nowrap; }
+}

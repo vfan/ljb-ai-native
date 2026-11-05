@@ -1,0 +1,30 @@
+.engineering-commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.engineering-commands > span,
+.engineering-commands > strong {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--muted);
+  font: 700 12px ui-monospace, monospace;
+}
+
+.engineering-commands > strong {
+  border-color: #e8c3a6;
+  background: #fff3e9;
+  color: #a34f24;
+}
+
+.dark .engineering-commands > strong {
+  border-color: #79533b;
+  background: #3c2a20;
+  color: #ffc49c;
+}

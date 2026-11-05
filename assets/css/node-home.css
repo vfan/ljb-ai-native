@@ -1,0 +1,38 @@
+.node-course-page .system-brief {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.node-course-page .system-brief h2 {
+  color: var(--ink);
+}
+
+.node-course-page .system-brief p {
+  color: var(--muted);
+}
+
+.node-course-page .brief-status {
+  color: var(--accent);
+}
+
+.node-course-page .brief-status i {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(71, 151, 109, 0.13);
+}
+
+.node-course-page .brief-stack {
+  color: var(--accent);
+}
+
+.node-course-page .brief-stack span {
+  border-color: var(--line);
+}
+
+.node-course-page .brief-stack b {
+  color: var(--accent);
+}
+
+.node-course-page .brief-foot {
+  border-color: var(--line);
+}

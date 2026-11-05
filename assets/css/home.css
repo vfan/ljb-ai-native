@@ -1,0 +1,25 @@
+/* Platform home: course catalog and two runnable projects */
+
+.platform-section { margin-top: 52px; }
+.platform-section .section-heading { margin-bottom: 22px; }
+.platform-section .section-heading h2 { margin-bottom: 0; }
+
+.project-card { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(270px, .55fr); overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+.project-main { display: flex; flex-direction: column; justify-content: center; padding: 28px; }
+.project-card + .project-card { margin-top: 14px; }
+.project-badge { display: inline-block; margin-bottom: 13px; padding: 6px 9px; border-radius: 999px; background: var(--accent-weak); color: var(--accent); font: 800 11px ui-monospace, monospace; letter-spacing: .6px; }
+.project-main h3 { margin: 0; font-size: clamp(24px, 3vw, 32px); line-height: 1.15; letter-spacing: -1px; }
+.project-main > p { max-width: 700px; margin: 12px 0 0; color: var(--muted); font-size: 15px; }
+.project-run { display: flex; flex-direction: column; justify-content: center; padding: 26px; background: var(--code); color: #dce9e1; }
+.run-label { color: #a9cab9; font: 700 11px ui-monospace, monospace; letter-spacing: .7px; text-transform: uppercase; }
+.project-run pre { overflow: auto; margin: 13px 0 0; padding: 15px; border: 1px solid #314039; border-radius: 8px; background: #09100d; color: #dce9e1; font: 12px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.project-run p { margin: 13px 0 0; color: #b8c9bf; font-size: 13px; }
+.project-readme { margin: 12px 0 0; }
+.project-readme a { color: #9de0b7; font-size: 13px; font-weight: 700; }
+.project-readme a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .project-card { grid-template-columns: 1fr; }
+  .project-main { padding: 20px; }
+  .project-run { padding: 20px; }
+}

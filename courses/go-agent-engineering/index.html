@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>服务端 Agent 开发实践</title>
+    <link rel="stylesheet" href="../../assets/css/main.css" />
+  </head>
+  <body data-course="agent" data-chapter="00" class="launch-page agent-course-page">
+    <header class="topbar">
+      <a class="brand" href="../../index.html"><span class="brand-mark">全</span><span>服务端 Agent 开发实践</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">章节目录</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="launch-main">
+      <section class="launch-hero" aria-labelledby="page-title">
+        <p class="eyebrow">SERVER-SIDE AGENT ENGINEERING · GO + EINO</p>
+        <div class="launch-hero-grid">
+          <div>
+            <p class="chapter-count">9 章 · 贯穿式课程</p>
+            <h1 id="page-title">在服务端构建 Agent，<em>从工具调用做到可靠交付</em></h1>
+            <p class="course-position">以真实的 <code class="inline-code">eino-oa</code> 仓库为主线，系统学习 Eino 的组件编排、服务端落地与效果评测。</p>
+            <p class="launch-lead">前五章沿项目源码理解 ChatModel、Prompt、Chain、Tool、ReAct、会话和 Skill；随后扩展 RAG 与 Graph，最后围绕同一个学业助手完成安全、故障处理与测试验收。</p>
+          </div>
+          <aside class="system-brief" aria-label="学业助手说明">
+            <span class="brief-status"><i></i> BUILD THE WORKER</span>
+            <h2>学业助手</h2>
+            <p>课程围绕一个大学生信息管理系统，构建能查询学生、读取成绩、生成分析报告的学业助手。</p>
+            <div class="brief-stack"><span>Go</span><b>+</b><span>Eino</span><b>+</b><span>Tools</span><b>+</b><span>Business API</span></div>
+            <p class="brief-foot">重点不是背 Agent API，而是理解模型如何在边界内完成工作。</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="closing-question" aria-labelledby="learning-path"><p class="section-kicker">学习路线</p><h2 id="learning-path">先做出助手，再检查它做得对不对。</h2><p>需要能读懂 Go 的函数、结构体与错误处理，并了解 HTTP 和 JSON。遇到不熟悉的框架名，可以先按中文职责理解，再回到代码看它如何实现。</p><ol><li><strong>第 1—4 章：</strong>用 Eino 连接模型和查询工具，理解学业报告怎样生成。</li><li><strong>第 5—7 章：</strong>扩展外部调用、文档问答与业务流程。</li><li><strong>第 8—9 章：</strong>补上工具权限和故障处理，用测试样本与执行记录验收学业助手。</li></ol><p>源码案例放在本仓库的 <a href="../../examples/eino-oa/README.md">eino-oa 学业助手</a>（上游：<a href="https://github.com/vfan/eino-oa" target="_blank" rel="noreferrer">GitHub</a>）。章节中的 <code class="inline-code">backend/…</code> 路径相对于 <code class="inline-code">examples/eino-oa/</code>。</p></section>
+
+      <section class="agent-demo" aria-labelledby="demo-title">
+        <header class="discovery-header"><div><p class="section-kicker">先看最终效果</p><h2 id="demo-title">一句话，基于业务数据生成成绩报告。</h2></div><p>下面是课程最终要实现的效果示例：模型负责理解请求，Agent 负责查询数据并组织结果。</p></header>
+        <div class="agent-demo-grid"><div class="agent-chat-card"><span class="demo-label">用户</span><p>帮我生成张三的成绩报告，顺便告诉我哪门课最需要补强。</p><span class="demo-label assistant-label">学业助手</span><p>我先查询张三的学生信息和成绩，再计算平均分、及格率和最低分课程。</p><div class="demo-trace"><span>query_student</span><i>→</i><span>query_grades</span><i>→</i><span>grade_analysis</span></div></div><div class="agent-report-card"><div class="report-heading"><span>学生成绩报告</span><strong>张三 · 1001</strong></div><div class="report-metrics"><div><small>平均分</small><b>87.4</b></div><div><small>及格率</small><b>100%</b></div><div><small>课程数</small><b>6</b></div></div><p>需要优先补强：数据结构（72 分）。建议结合错题和章节练习安排下一步学习。</p></div></div>
+      </section>
+
+      <section class="closing-question" aria-labelledby="evaluation-title"><p class="section-kicker">从实现到验证</p><h2 id="evaluation-title">做出学业助手之后，<br />用测试结果说明它是否可靠。</h2><p>第 9 章围绕六类样本检查回答与工具执行，比较修改前后的结果，完成一份验收表。</p><a class="button primary" href="chapters/chapter-09-evaluation-contract.html">进入第 9 章：测试与验收 <span>→</span></a><p>选做：<a href="../../examples/meeting-eval/README.md">会议行动项评测台</a>，进一步练习批量评分与版本对比。</p></section>
+
+      <section class="closing-question" id="closing-question">
+        <p class="section-kicker">先建立正确的对象</p>
+        <h2>Agent 不是更长的提示词，<br />而是一套可观察、可约束的执行循环。</h2>
+        <p>下一步，先分清网页对话、大模型和 Agent，再理解“推理 + 执行”的基本循环。</p>
+        <a class="button primary" href="chapters/chapter-01-llm-agent-react.html">进入 Chapter 1：看懂 Agent <span>→</span></a>
+      </section>
+    </main>
+
+    <footer>服务端 Agent 开发实践 · 从 Eino 编排到效果验证</footer>
+    <script src="../../assets/js/common.js"></script>
+  </body>
+</html>

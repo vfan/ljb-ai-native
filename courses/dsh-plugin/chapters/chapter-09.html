@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>第 9 章：综合项目——工具调用计数器 · DSH 插件开发</title>
+    <meta name="description" content="从写、配、验、包、装到卸，完成一个范围清楚、能验证的综合项目。" />
+    <link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" />
+    <link rel="stylesheet" href="../../../assets/css/main.css" />
+    <link rel="stylesheet" href="../../../assets/css/dsh-plugin.css" />
+  </head>
+  <body data-course="dsh-plugin" data-chapter="09" class="dsh-course-page dsh-chapter-page">
+    <header class="topbar">
+      <a class="brand" href="../../../index.html"><span class="brand-mark">插</span><span>DSH 插件开发</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">Chapter 9 · 综合项目</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="chapter-layout dsh-layout">
+      <nav class="chapter-nav" aria-label="本页内容"><p>本章内容</p><a href="#s1">任务与统计契约</a>
+        <a href="#s2">核心概念</a>
+        <a href="#s3">实现与验证</a>
+        <a href="#s4">交付与评分</a>
+        <a href="#s5">复盘问题</a>
+        <a href="#s6">扩展方向</a>
+        <a href="#takeaway">带走句</a></nav>
+      <article class="chapter dsh-chapter">
+        <header class="chapter-header">
+          <p class="eyebrow">CHAPTER 09 · FINAL PROJECT</p>
+          <p class="page-number">09</p>
+          <h1>综合项目：<br /><em>工具调用计数器</em></h1>
+          <p class="lead">从写、配、验、包、装到卸，完成一个范围清楚、能验证的综合项目。</p>
+          <aside class="dsh-note"><p>毕业项目。覆盖七环节图的<strong>全部 1–7 格</strong>：写、配、验、包、装、卸，并按明确的三档评分标准交付。</p></aside>
+          <div class="dsh-stage-map" aria-label="本章对应的七环节"><span class="dsh-stage-label">七环节</span><div class="dsh-stage-track"><span class="dsh-stage active"><b>1</b>安装</span><span class="dsh-stage active"><b>2</b>加载</span><span class="dsh-stage active"><b>3</b>初始化</span><span class="dsh-stage active"><b>4</b>注册</span><span class="dsh-stage active"><b>5</b>触发</span><span class="dsh-stage active"><b>6</b>执行</span><span class="dsh-stage active"><b>7</b>展示</span></div></div>
+        </header>
+
+        <section id="s1"><p class="section-kicker">第 1 节</p><h2>任务与统计契约</h2><p>做一个工具调用计数器：插件启动后，记录其监听范围内各工具结果出现的次数，按工具名称在终端输出。</p><div class="code-block"><div class="code-header"><span>输出</span><button class="copy-code" type="button">复制</button></div><pre><code>[工具统计] greet：第 1 次
+[工具统计] greet：第 2 次
+[工具统计] another_tool：第 1 次</code></pre></div><p><strong>统计契约（每个插件都应能用一句话说清自己不做什么）</strong>：</p><aside class="dsh-quote"><p>本插件统计当前 Host 插件实例存活期间，在其可见事件作用域内收到并通过过滤条件的 <code class="inline-code">tools/result</code> 回调次数，按工具名称累计。不区分会话，不恢复历史，不代表业务成功次数。重启后归零；重载时旧监听撤销，新实例从零开始。</p></aside><p><strong>基础版按插件实例计数，不区分会话和 Agent</strong>——同一 profile 下多个会话或子 Agent 的工具结果会进入同一个 Map。如果只统计当前会话，需要从事件参数取会话标识并分组（属于扩展方向）。</p></section>
+
+        <section id="s2"><p class="section-kicker">第 2 节</p><h2>核心概念</h2><h3>执行流程</h3><div class="course-diagram"><pre class="mermaid">flowchart TD
+    A["插件加载与配置校验"] --> B{"功能启用？"}
+    B -->|否| C["结束初始化"]
+    B -->|是| D["创建计数状态并注册监听（只执行一次）"]
+    D --> E["等待下一次工具结果"]
+    E --> F["收到工具结果"]
+    F --> G{"符合过滤条件？"}
+    G -->|否| E
+    G -->|是| H["更新该工具次数并输出"]
+    H --> E</pre></div><p>先过滤，再计数；<code class="inline-code">D</code> 只执行一次，<code class="inline-code">H</code> 之后回到等待，不会重新初始化。</p><h3>状态的形状与重载边界</h3><p>按工具名称保存次数（<code class="inline-code">greet</code> 为 2、<code class="inline-code">another_tool</code> 为 1），而不是共用一个总数。重载时旧实例监听被撤销、新实例从零开始，后续事件不会被新旧两个监听重复处理。跨重载保留计数、历史去重都不在本项目范围内。</p></section>
+
+        <section id="s3"><p class="section-kicker">第 3 节</p><h2>实现与验证</h2><h3>第一步：只验证加载</h3><p>入口先只输出一行 <code class="inline-code">[工具统计] 插件已加载</code>。看到它说明第 2–3 格通过，再加功能。</p><h3>第二步：观察工具结果</h3><div class="code-block"><div class="code-header"><span>TypeScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-typescript">ctx.on('tools/result', (exec) =&gt; {
+  console.log(`${config.prefix} 收到：${exec.name}`)
+})</code></pre></div><p>用一次真实调用确认监听生效、一次调用只产生一条记录。</p><h3>第三步：完整实现</h3><div class="code-block"><div class="code-header"><span>TypeScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-typescript">import type { Context } from '@deepseek-ai/cordis'
+import Schema from '@deepseek-ai/schemastery'
+import '@deepseek-ai/dsh-tools'
+
+export const name = 'tool-counter'
+
+export interface Config {
+  enabled: boolean
+  prefix: string
+  onlyTool: string
+}
+
+export const Config: Schema&lt;Config&gt; = Schema.object({
+  enabled: Schema.boolean().default(true),
+  prefix: Schema.string().default('[工具统计]'),
+  onlyTool: Schema.string().default(''),
+})
+
+function increment(counts: Map&lt;string, number&gt;, toolName: string): number {
+  const next = (counts.get(toolName) ?? 0) + 1
+  counts.set(toolName, next)
+  return next
+}
+
+export function apply(ctx: Context, config: Config) {
+  if (!config.enabled) {
+    console.log(`${config.prefix} 统计已关闭`)
+    return
+  }
+
+  const counts = new Map&lt;string, number&gt;()
+
+  ctx.on('tools/result', (exec) =&gt; {
+    if (config.onlyTool &amp;&amp; exec.name !== config.onlyTool) {
+      return
+    }
+    const next = increment(counts, exec.name)
+    console.log(`${config.prefix} ${exec.name}：第 ${next} 次`)
+  })
+
+  console.log(`${config.prefix} 插件已加载`)
+}</code></pre></div><p><code class="inline-code">increment</code> 不依赖 dsh，可单独测试；<code class="inline-code">counts</code> 与监听都在 <code class="inline-code">apply</code> 内创建，每个实例各自从零开始。</p><h3>验证矩阵</h3><p>一张成功截图不说明正确。每个场景区分一种错误实现：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>场景</th><th>预期</th><th>能发现的问题</th></tr></thead><tbody><tr><td>连续调用两次 <code class="inline-code">greet</code></td><td>次数为 1、2</td><td>是否真正累计</td></tr><tr><td>调用两种工具</td><td>分别计数</td><td>是否错用单一总数</td></tr><tr><td>只统计 <code class="inline-code">greet</code>，再调其他工具</td><td>其他不计数</td><td>过滤是否在计数前</td></tr><tr><td><code class="inline-code">enabled: false</code></td><td>无输出</td><td>开关是否有效</td></tr><tr><td>改前缀后重启</td><td>用新前缀</td><td>是否读真实配置</td></tr><tr><td>重启实例</td><td>从 1 重新开始</td><td>状态生命周期</td></tr><tr><td>热重载</td><td>旧实例停输出、新实例从 1 开始、无双份日志</td><td>旧监听是否撤销</td></tr></tbody></table></div><p>验收时区分三种"两次"：模型说自己调用了两次、实际出现两次工具执行记录、插件记录了两次——以执行证据为准。</p><h3>故障演练：故意制造三个问题（先做坏，再做对）</h3><p><strong>问题一：过滤后次数不对。</strong> 把计数写在过滤之前——表面不输出其他工具，内部却统计了它们。修复原则：先判断是否统计，再改状态。</p><p><strong>问题二：所有工具共享次数。</strong> 用单一 <code class="inline-code">let count = 0</code>，无法表达各工具的次数。</p><p><strong>问题三：一次调用输出两条日志。</strong> 先查重复来源（两个条目加载同一插件、源码版+安装版并存、重复监听、自建订阅没清理），<strong>不要在输出里加"去重"</strong>——可能把真实调用也过滤掉。</p></section>
+
+        <section id="s4"><p class="section-kicker">第 4 节</p><h2>交付与评分</h2><p>按第 8 章流程打包为可安装 bundle，提交前核对：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>内容</th><th>要求</th></tr></thead><tbody><tr><td>代码</td><td>入口、配置、计数、监听逻辑可定位</td></tr><tr><td>安装包</td><td>可从 <code class="inline-code">.tgz</code> 安装并运行</td></tr><tr><td>使用说明</td><td>安装、启动、配置、卸载方式 + 一句话统计契约</td></tr><tr><td>版本记录</td><td>实际验证过的 dsh 版本或提交</td></tr><tr><td>验证记录</td><td>验证矩阵逐项结果</td></tr><tr><td>问题记录</td><td>至少一个问题的定位与修复过程</td></tr></tbody></table></div><p><strong>评分标准（三档）</strong>：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>档位</th><th>描述</th><th>对应比重思路</th></tr></thead><tbody><tr><td>合格</td><td>验证矩阵全绿：日志与预期逐项对得上，安装/卸载路径走通</td><td>功能正确 35%</td></tr><tr><td>良好</td><td>在合格之上，能解释每个注册在卸载时的撤销时机、配置与状态的归属、每条日志来自哪个环节</td><td>机制理解 25%</td></tr><tr><td>优秀</td><td>在良好之上，能主动说出自己实现的两个以上边界（如多会话混入同一 Map）、故障演练能独立定位、说明文档写清"不做什么"</td><td>调试 20% + 交付 20%</td></tr></tbody></table></div><p>不以代码行数或功能数量评价。一个范围清楚、正确运行的小插件，比堆功能却解释不了的项目更有价值。</p><h3>使用 AI 生成代码时</h3><p>可以让 AI 出初稿、解释类型错误、分析日志，但事件名与签名、配置字段是否接入逻辑、清理是否对应真实资源、压缩包内容、安装 profile，都要逐项核对。<strong>解释不了触发路径的代码不要提交。</strong></p></section>
+
+        <section id="s5"><p class="section-kicker">第 5 节</p><h2>复盘问题</h2><ol><li>为什么这个需求适合用插件，而不是让模型事后总结？（对照第 1 章触发机制）</li><li>哪个配置让 dsh 加载它？——答两层：包的 <code class="inline-code">dsh.bundle.patch</code> 让它成为一个配置层；<code class="inline-code">cordis.patch.yml</code> 的 <code class="inline-code">insert</code> 让它以条目进入配置树。</li><li>哪段代码加载时执行？哪段在工具结果出现后执行？</li><li>配置与计数状态分别在哪里？<code class="inline-code">ctx.on</code> 的监听和 <code class="inline-code">counts</code> 各自怎么消失？（监听由上下文生命周期回收；<code class="inline-code">counts</code> 随实例一起消失，不需要手动清理）</li><li>结果不符预期时，第一步检查什么？（答：先定七环节图的第几格）</li><li><strong>加"查询统计"工具时，它自己算不算被统计？</strong> 两种设计各有立场——<strong>计入</strong>：口径一致，"工具调用次数"无需特判，简单且不会自欺；<strong>不计入</strong>：统计目标是"业务工具的使用情况"，自身查询属于观测行为，混入会污染数据。关键不是选哪个，而是：<strong>选了就写进统计契约，让数字可解释。</strong></li></ol></section>
+
+        <section id="s6"><p class="section-kicker">第 6 节</p><h2>扩展方向</h2><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>方向</th><th>新增能力</th><th>需要补充的知识</th></tr></thead><tbody><tr><td>按会话统计</td><td>会话分别计数</td><td>会话标识、状态范围</td></tr><tr><td>导出统计</td><td>JSON/CSV</td><td>文件路径、写入与错误处理</td></tr><tr><td>跨重启保留</td><td>恢复历史计数</td><td>持久化与并发更新</td></tr><tr><td>统计界面</td><td>面板查看次数</td><td>第 6 章的 Client + 插槽 + 通信</td></tr><tr><td>查询工具</td><td>Agent 查询统计</td><td>服务共享与工具注册（先定第 6 题）</td></tr></tbody></table></div></section>
+
+        <section class="page-summary dsh-summary" id="takeaway"><p class="section-kicker">本章带走句</p><blockquote><p>交付的不是源码，是别人能安装、能验证、出问题有办法定位的插件包——并且能用一句话说清它不做什么。</p></blockquote></section>
+
+        <footer class="chapter-footer"><a href="chapter-08.html">← 调试与分发</a><a class="next-question" href="appendix-a.html">JS/TS/Node 基础 →</a></footer>
+      </article>
+    </main>
+    <footer>DSH 插件开发 · 从看懂一个插件到交付一个插件</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-typescript.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-json.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-yaml.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-markdown.min.js"></script>
+    <script src="../../../assets/js/code-highlight.js"></script>
+    <script src="../../../assets/vendor/mermaid/mermaid.min.js"></script>
+    <script src="../../../assets/js/diagrams.js"></script>
+    <script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

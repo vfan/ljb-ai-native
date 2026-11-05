@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>第 5 章：配置、状态与界面位置 · DSH 插件开发</title>
+    <meta name="description" content="用 Schema 定义配置，分清配置与状态，理解 profile、bundle 与 patch 的叠加。" />
+    <link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" />
+    <link rel="stylesheet" href="../../../assets/css/main.css" />
+    <link rel="stylesheet" href="../../../assets/css/dsh-plugin.css" />
+  </head>
+  <body data-course="dsh-plugin" data-chapter="05" class="dsh-course-page dsh-chapter-page">
+    <header class="topbar">
+      <a class="brand" href="../../../index.html"><span class="brand-mark">插</span><span>DSH 插件开发</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">Chapter 5 · 配置与组合</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="chapter-layout dsh-layout">
+      <nav class="chapter-nav" aria-label="本页内容"><p>本章内容</p><a href="#s1">要解决的问题</a>
+        <a href="#s2">核心概念</a>
+        <a href="#s3">操作与预期结果</a>
+        <a href="#s4">练习</a>
+        <a href="#takeaway">带走句</a></nav>
+      <article class="chapter dsh-chapter">
+        <header class="chapter-header">
+          <p class="eyebrow">CHAPTER 05 · CONFIG / STATE / SLOTS</p>
+          <p class="page-number">05</p>
+          <h1>配置、状态<br /><em>与界面位置</em></h1>
+          <p class="lead">用 Schema 定义配置，分清配置与状态，理解 profile、bundle 与 patch 的叠加。</p>
+          <aside class="dsh-note"><p>本章深化七环节图的<strong>第 4–5 格</strong>：配置在加载前决定"插件以什么形态注册"，状态在触发中决定"这次该做什么"。UI 插槽是第 7 格"展示"的注册侧，完整走通在下一章。</p></aside>
+          <div class="dsh-stage-map" aria-label="本章对应的七环节"><span class="dsh-stage-label">七环节</span><div class="dsh-stage-track"><span class="dsh-stage"><b>1</b>安装</span><span class="dsh-stage"><b>2</b>加载</span><span class="dsh-stage"><b>3</b>初始化</span><span class="dsh-stage active"><b>4</b>注册</span><span class="dsh-stage active"><b>5</b>触发</span><span class="dsh-stage"><b>6</b>执行</span><span class="dsh-stage"><b>7</b>展示</span></div></div>
+        </header>
+
+        <section id="s1"><p class="section-kicker">第 1 节</p><h2>要解决的问题</h2><p>日志插件把前缀写死在源码里，四个问题随之出现：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>问题</th><th>对应概念</th></tr></thead><tbody><tr><td>改日志前缀必须改源码？</td><td>配置与 Schema</td></tr><tr><td>只记录某一种工具，在哪设？</td><td>YAML 传参与加载</td></tr><tr><td>已经记录多少次，是配置还是状态？</td><td>状态与生命周期</td></tr><tr><td>插件放在哪个目录，决定它显示在哪吗？</td><td>profile、bundle、patch 与 UI 插槽</td></tr></tbody></table></div></section>
+
+        <section id="s2"><p class="section-kicker">第 2 节</p><h2>核心概念</h2><h3>1. 配置描述"应该怎样运行"（以及它从哪来）</h3><aside class="dsh-note"><p>先回答一个上一章埋下的问题： 前 4 章的入口都写作 <code class="inline-code">apply(ctx)</code>，本章开始出现 <code class="inline-code">apply(ctx, config)</code>。<code class="inline-code">config</code> 是框架传入的<strong>第二个参数</strong>：框架加载插件时，读取你导出的 <code class="inline-code">Config</code> Schema，校验 YAML 中该条目下的 <code class="inline-code">config</code> 字段、填入默认值，然后把结果作为 <code class="inline-code">config</code> 传给 <code class="inline-code">apply</code>。没有导出 <code class="inline-code">Config</code> 的插件，<code class="inline-code">config</code> 就是空对象。</p></aside><p>配置是用户在加载前给出的选择；不是所有内部变量都适合做配置——会改变使用方式的（前缀、过滤、开关）交给用户，实现细节（监听哪个事件、如何拼日志）由开发者决定。</p><p>框架用 Schema 校验配置，导出有两部分（TypeScript 允许类型和值同名）：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>声明</th><th>作用</th></tr></thead><tbody><tr><td><code class="inline-code">export interface Config</code></td><td>开发时描述字段类型，检查源码</td></tr><tr><td><code class="inline-code">export const Config: Schema&lt;Config&gt;</code></td><td>运行时校验 YAML、填充默认值</td></tr></tbody></table></div><p>只写接口不够：接口不会检查用户实际填写的 YAML，<code class="inline-code">enabled: '随便写'</code> 只有运行时 Schema 能发现。<strong>类型检查面对源码，配置校验面对实际输入。</strong></p><p>Schema 的 <code class="inline-code">default()</code> 只在字段<strong>缺失</strong>时生效。<code class="inline-code">onlyTool</code> 默认空字符串，而"空字符串表示不过滤"是本例程序自己的约定，不是框架赋予的含义。</p><h3>2. 配置不是状态</h3><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>比较项</th><th>配置</th><th>状态</th></tr></thead><tbody><tr><td>来源</td><td>用户或部署设置</td><td>程序运行过程</td></tr><tr><td>例子</td><td>日志前缀、过滤条件</td><td>已记录次数、当前播放状态</td></tr><tr><td>改变原因</td><td>调整使用方式</td><td>发生了新操作</td></tr><tr><td>本例位置</td><td>YAML 与加载后的配置对象</td><td>插件实例内存</td></tr></tbody></table></div><p><code class="inline-code">let count = 0</code> 是状态：每次 <code class="inline-code">apply</code> 都创建新的计数器，重启归零。状态还要选对<strong>范围</strong>——把"某会话是否已提醒过"做成全局 <code class="inline-code">let notified = false</code>，会话 A 就会影响会话 B。需要持久化时先回答：哪个会话累计还是工作区累计还是跨重启累计？谁更新？并发怎么合并？<strong>先决定数据的归属和生命周期，再选择存储方式</strong>，不要为了"下次还能看到"就把状态写回配置文件。</p><h3>3. profile、bundle 与 patch</h3><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>概念</th><th>含义</th></tr></thead><tbody><tr><td>profile</td><td>一套可以启动的插件组合（运行配置）</td></tr><tr><td>bundle</td><td>可安装、可分发的一层配置及相关代码（组合包）</td></tr><tr><td>patch</td><td>对插件组合做插入或覆盖的配置操作（补丁）</td></tr></tbody></table></div><p>配置按顺序叠加：bundle 层 → profile 自身补丁 → home 层补丁（<code class="inline-code">$DSH_HOME</code> 默认 <code class="inline-code">~/.dsh</code>，可用环境变量覆盖）→ 命令行 <code class="inline-code">--patch</code>。后层覆盖前层。</p><p><strong>替换一个条目的 <code class="inline-code">config</code> 是整体替换，不是逐字段深合并。</strong> 后一层没写的字段会<strong>回落到 Schema 默认值</strong>，而不是保留前一层同名字段的值。前层写了 <code class="inline-code">prefix</code> 和 <code class="inline-code">onlyTool</code>，后层只写 <code class="inline-code">prefix</code>，<code class="inline-code">onlyTool</code> 就变回默认空字符串。排查"配置改了没效果"，要看最终生效的组合，不要只看某一个文件。</p><h3>4. UI 位置由插槽契约决定</h3><p>"插件在哪里"是三个问题：代码在哪（路径）？是否启用（组合）？显示在哪（插槽注册）。<strong>文件路径负责让程序被找到，插槽注册负责让组件被展示。</strong></p><p>插槽是宿主明确开放的界面扩展位置。位置不能凭名字猜，必须查目标插槽的契约：</p><ul><li>会话界面：<code class="inline-code">packages/client/ui-conversation/src/client/contract/slots.ts</code>。<code class="inline-code">conversation.session.header.actions</code>（<code class="inline-code">list</code>、<code class="inline-code">session</code>，会话标题旁）、<code class="inline-code">conversation.composer.dock</code>（<code class="inline-code">list</code>、<code class="inline-code">session</code>，输入框卡片下方，适合放统计、状态等环境信息）。</li><li>设置页面：<code class="inline-code">packages/client/ui-settings/src/client/contract/slots.ts</code>。<code class="inline-code">settings.section</code>（<code class="inline-code">list</code>、<code class="inline-code">root</code>，一整页设置）；<code class="inline-code">settings.general.item</code>（<code class="inline-code">list</code>、<code class="inline-code">root</code>，General 分区的一行偏好，文案、当前值和写入路径都由注册者负责）。</li><li>工作区：<code class="inline-code">packages/client/ui-workspace/src/client/contract/slots.ts</code>（其 README 只描述它自己那一侧的位置，不能用来解释会话标题栏或设置页）。</li></ul><p>注册机制三件事不要混：</p><ul><li><code class="inline-code">inject: ['slots']</code>：Cordis 服务依赖，不决定位置。</li><li><code class="inline-code">ctx.slots.inject(name, cb)</code>：等宿主声明目标插槽后再执行回调，解决时序，不决定位置。</li><li><code class="inline-code">ctx.slots.register({ name, id, order }, Component)</code>：把组件放进插槽。</li></ul><h3>5. 配置界面 ≠ 配置已保存</h3><p>界面能响应操作，只证明组件在工作；不证明值已写入、会被读取、刷新后恢复。从拖动到真正保存要经过四步：更新显示 → 更新当前行为 → 保存（刷新后可恢复）→ 同步到其他页面。每个配置项都要写清：谁保存、谁读取、什么时候应用。Host 与 Client 各有一个 <code class="inline-code">volume</code> 变量不会自动同步，必须走宿主通信机制。</p></section>
+
+        <section id="s3"><p class="section-kicker">第 3 节</p><h2>操作与预期结果</h2><h3>1. 给日志插件加配置</h3><p>替换 <code class="inline-code">tool-logger.ts</code>：</p><div class="code-block"><div class="code-header"><span>TypeScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-typescript">import type { Context } from '@deepseek-ai/cordis'
+import Schema from '@deepseek-ai/schemastery'
+import '@deepseek-ai/dsh-tools'
+
+export const name = 'tool-logger'
+
+export interface Config {
+  enabled: boolean
+  prefix: string
+  onlyTool: string
+}
+
+export const Config: Schema&lt;Config&gt; = Schema.object({
+  enabled: Schema.boolean().default(true),
+  prefix: Schema.string().default('[tool-logger]'),
+  onlyTool: Schema.string().default(''),
+})
+
+export function apply(ctx: Context, config: Config) {
+  console.log(`${config.prefix} 插件已加载`)
+
+  if (!config.enabled) {
+    console.log(`${config.prefix} 日志功能已关闭`)
+    return
+  }
+
+  let count = 0
+
+  ctx.on('tools/result', (exec) =&gt; {
+    if (config.onlyTool &amp;&amp; exec.name !== config.onlyTool) {
+      return
+    }
+    count += 1
+    console.log(`${config.prefix} 第 ${count} 次记录：${exec.name}`)
+  })
+}</code></pre></div><p>注意入口签名变成了 <code class="inline-code">apply(ctx, config)</code>——<code class="inline-code">config</code> 的来源见二.1 开头的说明。</p><h3>2. 通过 YAML 传入配置</h3><div class="code-block"><div class="code-header"><span>YAML</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-yaml">- insert:
+    - id: lesson-tool-logger
+      name: '/你的绝对路径/.../tool-logger.ts'
+      config:
+        enabled: true
+        prefix: '[工具记录]'
+        onlyTool: 'greet'
+
+    - id: lesson-greet-tool
+      name: '/你的绝对路径/.../greet-tool.ts'</code></pre></div><p>重启后调用 <code class="inline-code">greet</code>，预期：</p><div class="code-block"><div class="code-header"><span>输出</span><button class="copy-code" type="button">复制</button></div><pre><code>[工具记录] 插件已加载
+[工具记录] 第 1 次记录：greet</code></pre></div><p>保存 YAML 后要<strong>重启</strong>（重建插件实例）再观察。不要只改文件就假定生效：最终生效的是叠加后的组合。</p></section>
+
+        <section id="s4"><p class="section-kicker">第 4 节</p><h2>练习</h2><p><strong>练习 A（实现）</strong>：增加 <code class="inline-code">maxLogs</code> 配置（默认 5），达到上限后不再输出；只有匹配过滤条件的工具才计数；重启后归零。自测覆盖：默认只输出 5 条；<code class="inline-code">maxLogs: 2</code> 只输出 2 条；不匹配 <code class="inline-code">onlyTool</code> 的调用不占额度；重启从第 1 条重新开始。</p><p><strong>练习 B（定位题）</strong>：某同学在两层里都配置了 tool-logger：</p><div class="code-block"><div class="code-header"><span>YAML</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-yaml"># bundle 层
+config: { prefix: '[A]', onlyTool: 'greet' }
+
+# --patch 层
+config: { prefix: '[B]' }</code></pre></div><p>重启后他发现 <code class="inline-code">onlyTool</code> 过滤失效了，所有工具都被记录。<strong>只改 patch 层的话，怎么让过滤重新生效？</strong> 用"整体替换 + 回落默认值"解释原因，并说出两种修复方案。</p><p>完成后回答：</p><ol><li><code class="inline-code">maxLogs</code> 为什么是配置？已输出次数为什么是状态？</li><li><code class="inline-code">config</code> 参数是谁传给 <code class="inline-code">apply</code> 的？依据是什么？</li><li>注册设置页时，为什么"滑块能拖动"≠"配置已保存"？</li></ol></section>
+
+        <section class="page-summary dsh-summary" id="takeaway"><p class="section-kicker">本章带走句</p><blockquote><p>配置决定运行方式，状态记录运行过程，加载组合决定插件是否参与，插槽契约决定组件显示在哪里——后层覆盖是整体替换，没写的字段回落默认值。</p></blockquote></section>
+
+        <footer class="chapter-footer"><a href="chapter-04.html">← 事件与工具</a><a class="next-question" href="chapter-06.html">Client 插件 →</a></footer>
+      </article>
+    </main>
+    <footer>DSH 插件开发 · 从看懂一个插件到交付一个插件</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-typescript.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-json.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-yaml.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-markdown.min.js"></script>
+    <script src="../../../assets/js/code-highlight.js"></script>
+    
+    <script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

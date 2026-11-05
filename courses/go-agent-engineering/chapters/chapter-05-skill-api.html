@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Chapter 5：Skill 与外部 Agent</title><link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" /><link rel="stylesheet" href="../../../assets/css/main.css" /></head>
+  <body data-course="agent" data-chapter="05" class="agent-chapter-page">
+    <header class="topbar"><a class="brand" href="../../../index.html"><span class="brand-mark">全</span><span>服务端 Agent 开发实践</span></a><div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-expanded="false">Chapter 5 · Skill 与外部 Agent</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div></header>
+    <main class="chapter-layout agent-layout"><nav class="chapter-nav"><p>本章内容</p><a class="active" href="#why">为什么需要 Skill</a><a href="#relations">四个概念</a><a href="#contract">Skill 内容</a><a href="#install">安装与认证</a><a href="#flow">调用流程</a><a href="#trust">版本与信任</a><a href="#practice">小练习</a></nav><article class="chapter agent-chapter">
+      <header class="chapter-header"><p class="eyebrow">CHAPTER 5 · SKILL / API / AUTH</p><p class="page-number">05</p><h1>让别的 Agent，<br /><em>也能使用我们的业务。</em></h1><p class="lead">Skill 不复制业务逻辑，而是把能力说明、调用方式和约束交给外部 Agent；真正的数据仍由受保护的 API 提供。</p></header>
+
+      <section id="why"><p class="section-kicker">为什么需要 Skill</p><h2>同一个学业系统，不应该只能被自己的网页和内置 Agent 使用。</h2><p><code class="inline-code">eino-oa</code> 内部 Agent 可以在同一 Go 进程中调用 Tool。OpenClaw 等外部 Agent 不在这个进程里，它们需要先理解能力，再通过 HTTP API 访问数据。Skill 正是这层“可安装的使用说明”。</p><div class="diagnosis-callout"><h3>Skill 并没有创造新的业务能力</h3><p>学生查询和成绩分析仍然由原来的 Service 与 API 完成。Skill 让另一个 Agent 知道：有什么能力、参数怎么传、结果怎么解释、哪些动作需要确认。</p></div></section>
+
+      <section id="relations"><p class="section-kicker">先分清四个概念</p><h2>用一次“查成绩”理解四种角色。</h2><p>Model 决定要查什么；Tool 是当前程序能执行的动作；API 是其他程序访问业务的接口；Skill 是告诉 Agent 如何使用能力的一组说明和资源。本章的 Skill 主要说明怎样调用成绩 API。</p><table class="comparison"><thead><tr><th>概念</th><th>负责什么</th><th>在本课程中的例子</th></tr></thead><tbody><tr><th>Model</th><td>理解目标并决定下一步</td><td>DeepSeek 等支持 Tool Calling 的模型</td></tr><tr><th>Tool</th><td>供当前 Eino Agent 调用的结构化动作</td><td><code class="inline-code">query_student</code>、<code class="inline-code">query_grades</code></td></tr><tr><th>API</th><td>跨进程提供受保护的业务能力</td><td><code class="inline-code">GET /api/grades?student_id=1001</code></td></tr><tr><th>Skill</th><td>告诉外部 Agent 如何使用 API、脚本和资源</td><td><code class="inline-code">skills/student-manage/SKILL.md</code></td></tr></tbody></table><p class="teacher-conclusion">最重要的边界：Skill 负责“说明怎样调用”，API 负责“真正执行并鉴权”。</p></section>
+
+      <section id="contract"><p class="section-kicker">Skill 的内容</p><h2>一份好的 Skill，要让 Agent 能正确调用，也能正确停下来。</h2><div class="agent-note-grid"><div><h3>能力目录</h3><p>列出查询学生、查询成绩和成绩分析等适用场景。</p></div><div><h3>调用规则</h3><p>写明方法、路径、参数、分页、返回结构和失败处理。</p></div><div><h3>安全边界</h3><p>说明只读与写入差异、确认条件、Token 使用和禁止事项。</p></div></div><div class="code-block"><div class="code-header"><span>skills/grade-analysis/SKILL.md</span><span>源码节选</span></div><pre><code class="language-markdown"># 成绩分析 Skill
+
+## 能力
+查询学生成绩、统计平均分、及格率和 GPA。
+
+## 查询成绩
+GET /api/grades?student_id={student_id}
+
+## 约束
+- 必须先确认 student_id
+- 只能查询当前 Token 有权访问的数据
+- 写入成绩前必须展示参数并获得确认</code></pre></div><p>仓库中的 <code class="inline-code">skills/student-manage</code> 和 <code class="inline-code">skills/grade-analysis</code> 已经采用这种思路，把 REST API 用法交给外部 Agent。</p></section>
+
+      <section id="install"><p class="section-kicker">安装与认证</p><h2>Skill 可以像工具包一样快速接入 Agent。</h2><p>下面的金山文档 Skill 展示了一个直观过程：把安装指令发给 Agent，Agent 下载并解压 Skill，再通过本地 CLI 保存 Token。之后，它就能根据 Skill 说明使用文档能力。</p><figure class="skill-install-figure"><img src="../assets/kdocs-skill-install.png" alt="金山文档 Skill 安装与 Token 认证示例" /><figcaption>安装动作很简单，但 Skill 来源、版本和 Token 权限仍然需要认真检查。</figcaption></figure><div class="code-block"><div class="code-header"><span>发给 Agent 的安装指令</span><span>文本示例</span></div><pre><code class="language-bash">https://wpsai.wpscdn.cn/skillhub/pro/v2.5.20/kdocs.zip
+
+下载 zip 包并 unzip 解压，帮我安装这个 Skill，
+然后运行 kdocs-cli auth set-token "******" 完成认证。</code></pre></div><div class="danger-callout"><p>Token 包含账号权限。真实 Token 只输入到可信的本地 CLI 或密钥系统，不能放进 Skill 文件、代码仓库、截图和普通日志。</p></div></section>
+
+      <section id="flow"><p class="section-kicker">API 与 Token</p><h2>说明书告诉你怎么调用，访问凭证决定你能否调用。</h2><p>本章的 Token 指<strong>访问凭证</strong>，相当于服务端发的通行证；它与模型计费使用的 Token 不是同一概念。Scope 指凭证允许的动作范围，例如只允许查询成绩。</p><div class="diagnosis-callout"><h3>当前鉴权边界</h3><p><code class="inline-code">eino-oa</code> 已经提供 REST API 与 Skill 文档，但当前版本没有完整的 Bearer Token 鉴权。生产系统还需要补齐 Token、Scope 与审计链路。</p></div><div class="code-block"><div class="code-header"><span>外部 Agent 调用成绩 API</span><span>Go</span></div><pre><code class="language-go">req, err := http.NewRequestWithContext(ctx,
+    http.MethodGet,
+    baseURL+"/api/grades?student_id=1001",
+    nil,
+)
+if err != nil {
+    return err
+}
+
+req.Header.Set("Authorization", "Bearer "+token)
+resp, err := http.DefaultClient.Do(req)</code></pre></div><div class="course-diagram"><pre class="mermaid">sequenceDiagram
+    participant O as OpenClaw
+    participant S as Skill
+    participant API as Go API
+    participant Auth as 鉴权
+    participant DB as 业务数据库
+    O->>S: 读取能力、参数和约束
+    S-->>O: GET /api/grades?student_id=1001
+    O->>API: Authorization: Bearer token
+    API->>Auth: 校验 Token、Scope 与数据范围
+    Auth-->>API: 允许访问
+    API->>DB: 查询成绩
+    DB-->>API: 结构化数据
+    API-->>O: JSON 结果
+    O-->>O: 继续推理并生成回答</pre></div><table class="comparison"><thead><tr><th>Token 设计</th><th>原因</th></tr></thead><tbody><tr><th>最小权限范围（Scope）</th><td>查询成绩的 Token 不应自动获得删除学生权限</td></tr><tr><th>有效期</th><td>泄露后的影响应被限制在可控时间内</td></tr><tr><th>可撤销与轮换</th><td>发现泄露时可以立即失效并替换</td></tr><tr><th>审计主体</th><td>服务端要知道是哪位用户、哪个 Agent 发起调用</td></tr></tbody></table></section>
+
+      <section id="trust"><p class="section-kicker">安装简单，不代表可以随便安装</p><h2>Skill 也需要来源、版本和权限治理。</h2><table class="comparison"><thead><tr><th>检查项</th><th>安装前要回答</th></tr></thead><tbody><tr><th>来源</th><td>是否来自可信发布者，下载地址是否可能被替换？</td></tr><tr><th>版本</th><td>是否固定明确版本，升级时能否看到变更内容？</td></tr><tr><th>脚本</th><td>是否会执行 Shell、读取本地文件或上传数据？</td></tr><tr><th>权限</th><td>Token Scope 是否小于等于 Skill 真正需要的范围？</td></tr></tbody></table><div class="page-summary"><p class="section-kicker">本页总结</p><ol><li>Tool 面向当前 Eino Agent，Skill 面向外部 Agent，API 承载真实业务。</li><li>安装 Skill 可以很简单，但来源、版本和脚本必须经过检查。</li><li>Skill 不是权限通行证；Token、Scope 和数据权限全部由服务端验证。</li><li>Token 应具备最小权限、有效期、撤销、轮换和审计能力。</li><li>外部 Agent 仍然遵循“推理 → 执行 → 观察”的循环。</li></ol><blockquote>一个业务能力同时被网页、内置 Agent 和外部 Agent 使用时，API 契约与鉴权就是共同边界。</blockquote></div></section>
+
+
+      <section id="practice"><p class="section-kicker">小练习</p><h2>为“只读查询成绩”写一段 Skill。</h2><p>写清查询用途、学生编号参数、返回字段和失败时怎么办。再设计两个请求：一个有读取权限，一个没有读取权限。</p><p><strong>完成标准：</strong>Skill 写着“只读”还不够，服务端必须拒绝无权请求；安装了 Skill 不意味着已经获得业务权限。</p></section>
+
+      <footer class="chapter-footer"><a href="chapter-04-tool-agent.html">← Chapter 4：Tool、ReAct 与会话</a><a class="next-question" href="chapter-06-rag.html">Chapter 6：Retriever 与 RAG →</a></footer>
+    </article></main>
+    <footer>服务端 Agent 开发实践 · 从 Eino 编排到效果验证</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script><script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script><script src="../../../assets/vendor/prism/components/prism-go.min.js"></script><script src="../../../assets/vendor/prism/components/prism-markdown.min.js"></script><script src="../../../assets/vendor/mermaid/mermaid.min.js"></script><script src="../../../assets/js/diagrams.js"></script><script src="../../../assets/js/code-highlight.js"></script><script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

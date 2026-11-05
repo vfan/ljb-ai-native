@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DSH 插件开发 · 从看懂一个插件到交付一个插件</title>
+    <meta name="description" content="9 章 + 附录：以“插件的七个环节”为主线，从最小插件写到 Host / Client 双半区，再完成调试、打包、安装与综合项目。" />
+    <link rel="stylesheet" href="../../assets/css/main.css" />
+    <link rel="stylesheet" href="../../assets/css/dsh-plugin.css" />
+  </head>
+  <body data-course="dsh-plugin" data-chapter="HOME" class="dsh-course-page dsh-launch-page">
+    <header class="topbar">
+      <a class="brand" href="../../index.html"><span class="brand-mark">插</span><span>DSH 插件开发</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">课程首页</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="launch-main">
+      <section class="launch-hero" aria-labelledby="page-title">
+        <p class="eyebrow">DSH PLUGIN DEVELOPMENT · 9 CHAPTERS + APPENDIX</p>
+        <div class="launch-hero-grid">
+          <div>
+            <p class="chapter-count">9 章 + 1 附录 · 面向开发者</p>
+            <h1 id="page-title">看懂一个插件为什么能跑，<br /><em>再自己写一个。</em></h1>
+            <p class="course-position">HOST + CLIENT · CORDIS</p>
+            <p class="launch-lead">从概念与运行基础出发，写出最小插件，逐个拿下事件、工具、配置与 Client 半区，再读一个真实插件、学会排错与分发，最后交付一个能装、能验、能定位问题的综合项目。</p>
+          </div>
+          <aside class="system-brief" aria-label="课程主线">
+            <span class="brief-status"><i></i> THE SEVEN STAGES</span>
+            <h2>七环节地图</h2>
+            <p>插件从“一个想法”到“用户看到效果”，要经过安装、加载、初始化、注册、触发、执行、展示。它是全书地图：每章标注自己处理哪几格。</p>
+            <div class="brief-stack"><span>Host</span><b>+</b><span>Client</span><b>+</b><span>Tools</span><b>+</b><span>Slots</span><b>+</b><span>Bundle</span></div>
+            <p class="brief-foot">课程基线 dsh <code>0.1.1-rc.1</code> · commit <code>6c62d545bd</code>。版本结论绑定具体版本，换版本要重新核对。</p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="map" aria-labelledby="map-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">全书主图</p>
+            <h2 id="map-title">出问题时，先判断卡在第几格。</h2>
+          </div>
+          <p>不是每章一个知识点，而是同一条链路被逐格点亮。</p>
+        </div>
+        <div class="dsh-map-grid">
+          <div class="dsh-map-card"><b>01</b><strong>安装</strong><span>包和相关文件是否存在？</span><small>第 8 章</small></div>
+          <div class="dsh-map-card"><b>02</b><strong>加载</strong><span>当前运行配置是否引用了插件？</span><small>第 3 章</small></div>
+          <div class="dsh-map-card"><b>03</b><strong>初始化</strong><span>入口是否执行，依赖是否就绪？</span><small>第 3 章</small></div>
+          <div class="dsh-map-card"><b>04</b><strong>注册</strong><span>工具、监听或界面是否成功注册？</span><small>第 4 章</small></div>
+          <div class="dsh-map-card"><b>05</b><strong>触发</strong><span>是否发生了预期的调用或事件？</span><small>第 4 章</small></div>
+          <div class="dsh-map-card"><b>06</b><strong>执行</strong><span>程序是否完成操作？</span><small>第 4 章</small></div>
+          <div class="dsh-map-card"><b>07</b><strong>展示</strong><span>结果是否返回到正确位置？</span><small>第 6 章</small></div>
+        </div>
+        <div class="dsh-note">
+          <p><strong>怎么用这张图：</strong>学的时候，每章开头标注处理哪几格，学完自查“这几格我能不能独立走通”；用的时候，先判断卡在第几格，再去找那一格的证据。常见误区是跳格排查——“没有听到提示音”直接改播放函数，但问题可能出在第 2 格：压根没加载。</p>
+        </div>
+      </section>
+
+      <section id="chapters" aria-labelledby="chapters-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">章节地图</p>
+            <h2 id="chapters-title">九章加一个附录，从“该不该写”到“交给别人”。</h2>
+          </div>
+          <p>每章末尾一句带走句；每章至少一个定位题。</p>
+        </div>
+        <div class="dsh-chapter-grid">
+          <a class="dsh-chapter-card" href="chapters/chapter-01.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 01</span><span class="dsh-card-stages">该不该写</span></div>
+            <h3>插件是什么，什么时候该写插件</h3>
+            <p>插件、Skill、工具、MCP 与 CLI 的区别；安装插件承担的信任成本；判断“能做”与“值得做”的五项代价。</p>
+            <div class="dsh-card-foot"><span>七环节 · 概念</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/chapter-02.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 02</span><span class="dsh-card-stages">环节 1–3</span></div>
+            <h3>运行环境，与全书的地图</h3>
+            <p>Host 与 Client 的职责边界、三种路径解析基准、“安装 ≠ 加载”，以及贯穿全书的七环节主图。</p>
+            <div class="dsh-card-foot"><span>Host / Client / 路径</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/chapter-03.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 03</span><span class="dsh-card-stages">环节 2–3</span></div>
+            <h3>编写并加载第一个插件</h3>
+            <p>用 --patch 加载本地源码、用日志验证，理解 apply 由谁调用，以及为什么定时器要写进 ctx.effect。</p>
+            <div class="dsh-card-foot"><span>加载 / 初始化 / 清理</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/chapter-04.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 04</span><span class="dsh-card-stages">环节 3–6</span></div>
+            <h3>事件、工具与服务</h3>
+            <p>4A 事件、4B 工具、4C 服务与 inject 三节，每节配一个实现题和一个定位题，讲透“注册 ≠ 调用”。</p>
+            <div class="dsh-card-foot"><span>Events / Tools / Inject</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/chapter-05.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 05</span><span class="dsh-card-stages">环节 4–5</span></div>
+            <h3>配置、状态与界面位置</h3>
+            <p>Schema 校验、配置与状态的区别、profile / bundle / patch 的叠加顺序，以及插槽契约决定组件位置。</p>
+            <div class="dsh-card-foot"><span>Config / State / Slots</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/chapter-06.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 06</span><span class="dsh-card-stages">环节 4 + 7</span></div>
+            <h3>最小 Client 插件</h3>
+            <p>基于 hello-dsh 做三步改造：跑通徽章、读契约换插槽、让浏览器显示 Host 的计数，第一次走通两端通信。</p>
+            <div class="dsh-card-foot"><span>Client / 插槽 / 路由</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/chapter-07.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 07</span><span class="dsh-card-stages">环节 1–7</span></div>
+            <h3>真实插件代码解读</h3>
+            <p>只读案例：按七环节读一个已发布的声音通知插件，找出 Client 主循环、四条 Host 路由和必须一致的四类字段。</p>
+            <div class="dsh-card-foot"><span>只读 / 三个停靠点</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/chapter-08.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 08</span><span class="dsh-card-stages">环节 1–2</span></div>
+            <h3>调试、打包与分发</h3>
+            <p>用日志建立证据、用最小复现隔离问题；把绝对路径换成可安装的包，用 .tgz 验证真实交付内容。</p>
+            <div class="dsh-card-foot"><span>Debug / Pack / Ship</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/chapter-09.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">CHAPTER 09</span><span class="dsh-card-stages">环节 1–7</span></div>
+            <h3>综合项目：工具调用计数器</h3>
+            <p>写、配、验、包、装、卸全流程；验证矩阵、三个故意做坏的问题，以及合格 / 良好 / 优秀三档评分。</p>
+            <div class="dsh-card-foot"><span>项目 / 交付 / 评分</span><span>开始 →</span></div>
+          </a>
+          <a class="dsh-chapter-card" href="chapters/appendix-a.html">
+            <div class="dsh-card-top"><span class="dsh-card-no">APPENDIX A</span><span class="dsh-card-stages">课前</span></div>
+            <h3>JS / TS / Node 基础</h3>
+            <p>三种导入、模块与导出入口、package.json、依赖声明与构建产物——插件开发真正用得到的那部分。</p>
+            <div class="dsh-card-foot"><span>自测清单</span><span>开始 →</span></div>
+          </a>
+        </div>
+      </section>
+
+      <section id="prepare" aria-labelledby="prepare-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">开课之前</p>
+            <h2 id="prepare-title">先准备源码环境，再准备语言基础。</h2>
+          </div>
+          <p>课程以源码 checkout 为主线，不是安装版 App。</p>
+        </div>
+        <div class="dsh-env-grid">
+          <div class="dsh-env-card">
+            <h3>适合谁</h3>
+            <ul>
+              <li>已经会基本 JavaScript 或 TypeScript；没把握先做附录 A 的自测。</li>
+              <li>用过 dsh，想理解它的插件到底怎样被加载和运行。</li>
+              <li>需要把内部能力接进 dsh，或准备向别人分发插件。</li>
+              <li>不要求先读 dsh 源码；但愿意查类型、读日志、做最小复现，会明显更顺。</li>
+            </ul>
+          </div>
+          <div class="dsh-env-card">
+            <h3>课程环境</h3>
+            <pre><span># 源码 checkout 是主线</span>
+git clone https://github.com/deepseek-ai/deepseek-harness.git
+cd deepseek-harness
+git checkout 6c62d545bd
+pnpm install --frozen-lockfile
+pnpm run build</pre>
+            <p class="dsh-env-note">Node.js <code class="inline-code">^22.19.0 || &gt;=24.0.0</code> · pnpm <code class="inline-code">11.7.0</code>。所有 <code class="inline-code">pnpm dsh ...</code> 都在仓库根目录执行；已安装 CLI 的 <code class="inline-code">dsh ...</code> 与桌面 App 是另外两套环境，不要混用。</p>
+          </div>
+        </div>
+        <div class="dsh-conventions">
+          <div><b>pnpm dsh / dsh</b><p>前者是源码仓库脚本，只在 checkout 根目录成立；后者是已安装的 CLI。桌面 App 走界面操作，不能默认终端里有 dsh。</p></div>
+          <div><b>Host / Client</b><p>Host 在宿主进程里运行，能读写文件、启动进程；Client 在浏览器页面里运行，只有 DOM、音频和插槽能力。</p></div>
+          <div><b>带走句 / 定位题</b><p>每章末尾一句加粗结论；定位题给你一份故意写坏的代码，先用日志和现象说清它坏在哪一层，再改到能跑。</p></div>
+        </div>
+      </section>
+
+      <section class="closing-question" id="closing-question">
+        <p class="section-kicker">先建立正确的对象</p>
+        <h2>插件不是一段配置，<br />是被宿主加载并承担权限的程序。</h2>
+        <p>下一步，先分清插件、Skill、工具与 MCP，再判断一个需求到底该不该做成插件。</p>
+        <a class="button primary" href="chapters/chapter-01.html">进入 Chapter 1：插件是什么 <span>→</span></a>
+      </section>
+    </main>
+
+    <footer>DSH 插件开发 · 从看懂一个插件到交付一个插件</footer>
+    <script src="../../assets/js/common.js"></script>
+  </body>
+</html>

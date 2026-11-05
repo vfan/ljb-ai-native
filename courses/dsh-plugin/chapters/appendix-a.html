@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>附录 A：JavaScript、TypeScript 与 Node.js 基础（课前材料） · DSH 插件开发</title>
+    <meta name="description" content="课前自测：插件开发真正用到的语言与模块知识，不熟先补齐再到第 3 章。" />
+    <link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" />
+    <link rel="stylesheet" href="../../../assets/css/main.css" />
+    <link rel="stylesheet" href="../../../assets/css/dsh-plugin.css" />
+  </head>
+  <body data-course="dsh-plugin" data-chapter="A" class="dsh-course-page dsh-chapter-page">
+    <header class="topbar">
+      <a class="brand" href="../../../index.html"><span class="brand-mark">插</span><span>DSH 插件开发</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">附录 A · JS/TS/Node 基础</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="chapter-layout dsh-layout">
+      <nav class="chapter-nav" aria-label="本页内容"><p>本章内容</p><a href="#s1">JavaScript、TypeScript 与 Node.js</a>
+        <a href="#s2">三种常见导入</a>
+        <a href="#s3">模块与导出入口</a>
+        <a href="#s4">包与 package.json</a>
+        <a href="#s5">依赖的三类声明</a>
+        <a href="#s6">构建：从源码到分发文件</a>
+        <a href="#s7">自测</a></nav>
+      <article class="chapter dsh-chapter">
+        <header class="chapter-header">
+          <p class="eyebrow">CHAPTER A · JS / TS / NODE BASICS</p>
+          <p class="page-number">A</p>
+          <h1>JavaScript、TypeScript<br /><em>与 Node.js 基础</em></h1>
+          <p class="lead">课前自测：插件开发真正用到的语言与模块知识，不熟先补齐再到第 3 章。</p>
+          <aside class="dsh-note"><p>本附录是<strong>课前自测材料</strong>：已会 JS/TS 的同学可以跳过；不熟的先补齐，否则第 3 章会卡住。</p></aside>
+          
+        </header>
+
+        <section id="s1"><p class="section-kicker">A1</p><h2>JavaScript、TypeScript 与 Node.js</h2><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>名称</th><th>作用</th></tr></thead><tbody><tr><td>JavaScript</td><td>编写程序逻辑的语言</td></tr><tr><td>TypeScript</td><td>在 JavaScript 上增加类型等能力</td></tr><tr><td>Node.js</td><td>JavaScript 的运行环境之一</td></tr></tbody></table></div><div class="code-block"><div class="code-header"><span>TypeScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-typescript">function formatLabel(text: string): string {
+  return `[提醒] ${text}`
+}
+
+formatLabel(42)   // 类型不匹配，编辑器会提示</code></pre></div><p><strong>类型检查只面对源码，不会校验用户、文件或网络传入的实际数据</strong>——那些输入仍需运行时校验（正课第 5 章的 Schema 就是运行时校验）。</p></section>
+
+        <section id="s2"><p class="section-kicker">A2</p><h2>三种常见导入</h2><div class="code-block"><div class="code-header"><span>TypeScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-typescript">import type { Context } from '@deepseek-ai/cordis'   // 只引入类型信息
+import { defineTool } from '@deepseek-ai/dsh-tools'   // 引入运行时函数
+import '@deepseek-ai/dsh-tools'                       // 副作用导入：加载模块/引入类型声明</code></pre></div><p><strong>导入模块 ≠ 启用对应服务</strong>：服务是否存在取决于运行配置和依赖机制（正课 4C）。</p></section>
+
+        <section id="s3"><p class="section-kicker">A3</p><h2>模块与导出入口</h2><p>模块通过导出公开能力、通过导入使用能力：</p><div class="code-block"><div class="code-header"><span>JavaScript</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-javascript">// greet.js
+export function greet(name) {
+  return `Hello, ${name}!`
+}
+
+// main.js
+import { greet } from './greet.js'
+console.log(greet('Ada'))</code></pre></div><p><code class="inline-code">./greet.js</code> 相对<strong>发起导入的文件</strong>解析。插件入口导出 <code class="inline-code">apply</code>，框架加载模块后按约定调用它并传入 <code class="inline-code">ctx</code>——<strong>导出了函数不代表它已经执行</strong>（正课第 3 章补完整链路）。</p></section>
+
+        <section id="s4"><p class="section-kicker">A4</p><h2>包与 package.json</h2><p><strong>包是组织和分发代码的单位</strong>，可以包含多个模块、资源和配置：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>文件</th><th>作用</th></tr></thead><tbody><tr><td><code class="inline-code">package.json</code></td><td>包信息、入口和依赖声明</td></tr><tr><td><code class="inline-code">index.js</code> / <code class="inline-code">client.js</code></td><td>入口（文件名不是固定规则，实际入口由声明决定）</td></tr></tbody></table></div><div class="code-block"><div class="code-header"><span>JSON</span><button class="copy-code" type="button">复制</button></div><pre><code class="language-json">{
+  "name": "hello-example",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./index.js"
+}</code></pre></div><p><code class="inline-code">type: module</code> 表示按 ES 模块解释 <code class="inline-code">.js</code> 文件。按路径加载（<code class="inline-code">./greet.js</code>）与按包名加载（<code class="inline-code">@deepseek-ai/dsh-tools</code>）的解析规则不同——"找不到模块"时检查路径、安装位置、入口声明和运行环境。</p></section>
+
+        <section id="s5"><p class="section-kicker">A5</p><h2>依赖的三类声明</h2><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>声明</th><th>用途</th></tr></thead><tbody><tr><td><code class="inline-code">dependencies</code></td><td>运行时依赖</td></tr><tr><td><code class="inline-code">devDependencies</code></td><td>构建、类型检查、测试等开发依赖</td></tr><tr><td><code class="inline-code">peerDependencies</code></td><td>声明与宿主配合提供的依赖及版本要求</td></tr></tbody></table></div><p>某些框架包要遵循宿主的共享实例约定，否则插件可能加载另一份不兼容实现。<strong><code class="inline-code">peerDependencies</code> 是依赖契约，不是"自动保证只加载一份"的开关</strong>——还要看包管理器和宿主怎么解析。本课程先用仓库开发环境，独立打包时再补依赖声明（正课第 8 章）。</p></section>
+
+        <section id="s6"><p class="section-kicker">A6</p><h2>构建：从源码到分发文件</h2><p>TypeScript 项目的典型结构：<code class="inline-code">src/index.ts</code>（开发源码）→ 构建输出 <code class="inline-code">lib/index.js</code> → <code class="inline-code">package.json</code> 的 <code class="inline-code">main</code> 指向构建输出。</p><p>纯 JavaScript 插件可以没有构建；但只要用到 TypeScript、打包或资源复制，就要把构建产物纳入交付。</p><p><strong>入口必须与实际文件一致</strong>：声明 <code class="inline-code">"main": "./lib/index.js"</code> 而包里只有 <code class="inline-code">src/index.ts</code>，加载时找不到入口。要分别确认四件事：类型检查通过、构建成功、打包包含入口、宿主能加载——<strong>这是四个不同的验证结果</strong>。</p></section>
+
+        <section id="s7"><p class="section-kicker">A7</p><h2>自测</h2><ol><li><code class="inline-code">import type</code>、<code class="inline-code">import { x }</code>、<code class="inline-code">import 'pkg'</code> 各导入什么？</li><li><code class="inline-code">type: module</code> 影响什么？</li><li><code class="inline-code">"main"</code> 指向不存在的文件，会在哪个环节报错？</li><li>为什么 <code class="inline-code">peerDependencies</code> 不能保证"只有一份"？</li></ol><aside class="dsh-quote"><p>全部能答，直接进第 3 章；有一题含糊，先补对应小节。</p></aside></section>
+
+        
+
+        <footer class="chapter-footer"><a href="chapter-09.html">← 综合项目</a><a class="next-question" href="../index.html">返回课程首页 →</a></footer>
+      </article>
+    </main>
+    <footer>DSH 插件开发 · 从看懂一个插件到交付一个插件</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-typescript.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-json.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-yaml.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-markdown.min.js"></script>
+    <script src="../../../assets/js/code-highlight.js"></script>
+    
+    <script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

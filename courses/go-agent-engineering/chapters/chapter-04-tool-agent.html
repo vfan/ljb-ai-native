@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Chapter 4：Tool、ReAct 与会话</title><link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" /><link rel="stylesheet" href="../../../assets/css/main.css" /></head>
+  <body data-course="agent" data-chapter="04" class="agent-chapter-page">
+    <header class="topbar"><a class="brand" href="../../../index.html"><span class="brand-mark">全</span><span>服务端 Agent 开发实践</span></a><div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-expanded="false">Chapter 4 · Tool、ReAct 与会话</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div></header>
+    <main class="chapter-layout agent-layout"><nav class="chapter-nav"><p>本章内容</p><a class="active" href="#tool">第一个 Tool</a><a href="#assembly">组装 Agent</a><a href="#messages">消息闭环</a><a href="#history">会话与记忆</a><a href="#request">请求链路</a><a href="#limits">执行边界</a><a href="#granularity">工具粒度</a><a href="#stream">流式反馈</a><a href="#practice">小练习</a></nav><article class="chapter agent-chapter">
+      <header class="chapter-header"><p class="eyebrow">CHAPTER 4 · TOOL / REACT / SESSION</p><p class="page-number">04</p><h1>一个回答，<br /><em>可能经过多次调用。</em></h1><p class="lead">把“查学生 → 查成绩 → 生成报告”拆成可观察的 ReAct 执行，并理解消息、会话、限制和失败边界。</p></header>
+
+      <section id="tool"><p class="section-kicker">先给模型一个行动</p><h2>Tool Schema 是写给模型看的“工具参数说明”。</h2><p>模型不会直接执行 Go 函数。它先根据 Tool 的名称、描述和参数结构生成调用请求，Eino 再把参数交给真实函数。</p><div class="code-block"><div class="code-header"><span>backend/internal/agent/tools/student_tools.go</span><span>项目源码节选</span></div><pre><code class="language-go">func NewQueryStudentTool(svc *service.StudentService) tool.InvokableTool {
+    return utils.NewTool(
+        &amp;schema.ToolInfo{
+            Name: "query_student",
+            Desc: "按学号、姓名、院系、专业或状态查询学生",
+            ParamsOneOf: schema.NewParamsOneOfByParams(
+                map[string]*schema.ParameterInfo{
+                    "student_no": {Type: "string", Desc: "学号"},
+                    "name":       {Type: "string", Desc: "姓名"},
+                    "department": {Type: "string", Desc: "院系"},
+                },
+            ),
+        },
+        func(ctx context.Context, input *queryStudentInput) (string, error) {
+            result, err := svc.List(repository.StudentQuery{
+                StudentNo: input.StudentNo,
+                Name:      input.Name,
+                Department: input.Department,
+                PageSize:  50,
+            })
+            if err != nil {
+                return "", fmt.Errorf("查询失败: %w", err)
+            }
+            data, err := json.Marshal(result)
+            if err != nil {
+                return "", fmt.Errorf("序列化查询结果失败: %w", err)
+            }
+            return string(data), nil
+        },
+    )
+}</code></pre></div><div class="agent-note-grid"><div><h3>模型负责</h3><p>选择工具并生成结构化参数。</p></div><div><h3>Tool 负责</h3><p>校验参数、调用 Service、返回结构化结果。</p></div><div><h3>Service 负责</h3><p>权限、查询、业务规则和数据一致性。</p></div></div></section>
+
+      <section id="assembly"><p class="section-kicker">组装 Agent</p><h2>把 ChatModel 和 Tools 交给 ReAct 执行器。</h2><div class="code-block"><div class="code-header"><span>backend/internal/agent/agent.go</span><span>Eino v0.8.11</span></div><pre><code class="language-go">toolsConfig := compose.ToolsNodeConfig{
+    Tools: allTools,
+}
+
+a, err := react.NewAgent(ctx, &amp;react.AgentConfig{
+    ToolCallingModel: chatModel,
+    ToolsConfig:      toolsConfig,
+    MessageModifier:  buildSystemMessage,
+    MaxStep:          10,
+})
+if err != nil {
+    return nil, fmt.Errorf("创建Agent失败: %w", err)
+}</code></pre></div><div class="diagnosis-callout"><h3>先看项目锁定的版本</h3><p><code class="inline-code">eino-oa</code> 当前锁定 Eino v0.8.11，使用 <code class="inline-code">flow/agent/react.NewAgent</code>。新版官方示例也提供 ADK 的 <code class="inline-code">ChatModelAgent</code> 与 Runner。两者都在组织“模型选择工具 → 执行工具 → 把结果交回模型”的循环，但包路径和 API 不完全相同。实现时以项目的 <code class="inline-code">go.mod</code> 和对应版本文档为准。</p></div></section>
+
+      <section id="messages"><p class="section-kicker">消息闭环</p><h2>Tool Call 和 Tool Result 都是对话的一部分。</h2><p>Agent 并不是在模型外面偷偷执行一段代码。模型先返回结构化 Tool Call，Eino 执行工具，再把 Tool Result 追加到消息中交给模型。模型看到新结果后，才决定下一步。</p><div class="course-diagram"><pre class="mermaid">sequenceDiagram
+    participant U as 用户
+    participant M as ChatModel
+    participant E as Eino ReAct
+    participant T as Tools
+    U->>E: 生成张三的成绩报告
+    E->>M: user message + tool schemas
+    M-->>E: query_student(name=张三)
+    E->>T: 执行查询学生
+    T-->>E: student_id=1001
+    E->>M: tool result
+    M-->>E: query_grades(student_id=1001)
+    E->>T: 执行查询成绩
+    T-->>E: grades JSON
+    E->>M: tool result
+    M-->>U: 最终报告</pre></div><table class="comparison"><thead><tr><th>消息</th><th>谁产生</th><th>作用</th></tr></thead><tbody><tr><th>System</th><td>应用</td><td>定义角色和稳定规则</td></tr><tr><th>User</th><td>用户</td><td>表达当前目标</td></tr><tr><th>Assistant + Tool Call</th><td>模型</td><td>声明要调用哪个工具及参数</td></tr><tr><th>Tool Result</th><td>工具运行时</td><td>把真实执行结果交回模型</td></tr><tr><th>Assistant</th><td>模型</td><td>生成最终回答或继续调用工具</td></tr></tbody></table></section>
+
+      <section id="history">
+        <p class="section-kicker">会话不等于长期记忆</p>
+        <h2>历史消息让 Agent 看懂“他”“这门课”和“刚才那份报告”。</h2>
+        <p>第二句话往往省略了第一句话已经说过的信息。模型不是天然记得上一轮，而是应用把同一会话中的历史消息再次传给了它。</p>
+        <div class="agent-demo">
+          <p class="section-kicker">连续对话案例</p>
+          <div class="agent-demo-grid">
+            <div class="agent-chat-card">
+              <span class="demo-label">第一轮</span>
+              <p><strong>用户：</strong>查询张三的数据结构成绩。</p>
+              <span class="demo-label assistant-label">学业助手</span>
+              <p>张三的数据结构成绩是 72 分。</p>
+            </div>
+            <div class="agent-chat-card">
+              <span class="demo-label">第二轮</span>
+              <p><strong>用户：</strong>再分析一下他这门课的薄弱点。</p>
+              <span class="demo-label assistant-label">历史消息提供的上下文</span>
+              <p><strong>“他”</strong>指张三，<strong>“这门课”</strong>指数据结构。Agent 可以据此继续查询。但只有总分还不能判断具体知识点的薄弱处，需要题目或章节得分等额外记录。</p>
+            </div>
+          </div>
+          <div class="demo-trace"><span>读取同一 session</span><i>→</i><span>取出历史消息</span><i>→</i><span>追加当前问题</span><i>→</i><span>交给 Agent</span></div>
+        </div>
+        <div class="before-after">
+          <div class="before"><h3>只传第二句话</h3><code>再分析一下他这门课的薄弱点。</code><p>“他”和“这门课”都没有明确对象，模型只能猜测或追问。</p></div>
+          <div class="after"><h3>同时传入历史</h3><code>查询张三的数据结构成绩。<br />再分析一下他这门课的薄弱点。</code><p>模型可以从上一轮解析代词，再选择下一步工具。</p></div>
+        </div>
+        <div class="code-block"><div class="code-header"><span>backend/internal/agent/agent.go · Chat</span><span>项目源码</span></div><pre><code class="language-go">messages := make([]*schema.Message, 0, len(req.History)+1)
+for _, h := range req.History {
+    switch h.Role {
+    case "user":
+        messages = append(messages, schema.UserMessage(h.Content))
+    case "assistant":
+        messages = append(messages, schema.AssistantMessage(h.Content, nil))
+    }
+}
+messages = append(messages, schema.UserMessage(req.Message))
+
+resp, err := ca.agent.Generate(ctx, messages)</code></pre></div>
+        <table class="comparison"><thead><tr><th>数据</th><th>用途</th><th>能否作为事实</th></tr></thead><tbody><tr><th>当前消息</th><td>本轮任务</td><td>不能，仍要校验</td></tr><tr><th>会话历史</th><td>理解上下文和代词</td><td>不能，可能过期或包含模型错误</td></tr><tr><th>业务数据库</th><td>学生、课程和成绩</td><td>是当前业务事实来源</td></tr></tbody></table>
+        <p>历史消息只帮助模型理解“用户在说什么”，不能替代业务数据库。即使上一轮说张三是 72 分，执行下一步关键操作前仍应重新查询，因为成绩可能已经更新，上一轮回答也可能出错。</p>
+        <p>历史越长，Token 成本越高，也可能把旧错误继续带入后续请求。真实系统需要限制历史长度，必要时摘要，并在关键动作前重新查询业务事实。</p>
+      </section>
+
+      <section id="request"><p class="section-kicker">从浏览器到 Agent</p><h2>浏览器先找前端服务，再由它转交后端。</h2><p>Vite 是本地前端开发服务，Proxy 是请求转发。浏览器看见的页面和 API 都来自同一地址，就不涉及浏览器的跨域访问限制（CORS）。这与 Agent 选哪个工具是两个不同层次的问题。</p><div class="course-diagram"><pre class="mermaid">flowchart LR
+    B[浏览器 /api] --> V[Vite Dev Server :3000]
+    V -->|proxy| G[Gin :8080]
+    G --> H[Chat Handler]
+    H --> S[Session Service]
+    H --> A[Chat Agent]
+    A --> T[Tools / Report Chain]</pre></div><table class="comparison"><thead><tr><th>环境</th><th>请求方式</th><th>为什么不需要 CORS</th></tr></thead><tbody><tr><th>本地开发</th><td>浏览器请求 <code class="inline-code">/api</code>，Vite 转发到 8080</td><td>浏览器只看到 3000 同源请求</td></tr><tr><th>正式环境</th><td>Nginx 同域提供静态文件并转发 <code class="inline-code">/api</code></td><td>页面和 API 使用同一域名</td></tr></tbody></table><p class="teacher-conclusion">仓库后端已经移除宽松 CORS 中间件。跨域不是默认能力；确实需要跨域时，也应只允许明确来源，而不是无条件返回 <code class="inline-code">*</code>。</p></section>
+
+      <section id="limits"><p class="section-kicker">循环必须有刹车</p><h2>步数、超时、返回量和重试都要有上限。</h2><div class="agent-note-grid"><div><h3>MaxStep</h3><p>防止模型在工具之间无限循环。<code class="inline-code">eino-oa</code> 当前设置为 10。</p></div><div><h3>Context Timeout</h3><p>模型调用、数据库查询和外部 API 都应响应取消信号。</p></div><div><h3>Result Limit</h3><p>查询学生默认最多返回 50 条，避免把大列表全部塞进上下文。</p></div></div><div class="code-block"><div class="code-header"><span>调用边界 · Go</span><span>设计示例</span></div><pre><code class="language-go">ctx, cancel := context.WithTimeout(c.Request.Context(), 20*time.Second)
+defer cancel()
+
+reply, err := chatAgent.Chat(ctx, request)
+if errors.Is(err, context.DeadlineExceeded) {
+    return APIError{Code: "AGENT_TIMEOUT", Message: "任务执行超时"}
+}</code></pre></div><p>重试只适合明确的临时失败。例如新增成绩已经成功，但回复在途中超时，再重试可能新增两条。幂等键就是给同一次业务操作一个固定编号；服务端识别重复编号后返回已有结果，避免重复写入。</p></section>
+
+      <section id="granularity"><p class="section-kicker">工具粒度</p><h2>拆成多个 Tool，还是提供一个报告 Tool？</h2><p><code class="inline-code">eino-oa</code> 同时提供细粒度查询工具和组合式学生报告工具，这正好可以比较两种方案。</p><div class="before-after"><div class="before"><h3>细粒度工具</h3><code>query_student<br />query_grades<br />grade_analysis</code><p>可复用、过程透明；模型调用步数更多，组合结果更不稳定。</p></div><div class="after"><h3>组合工具</h3><code>student_report</code><p>内部调用 Report Service 与 Chain，流程和输出更稳定。</p></div></div><p class="teacher-conclusion">规则稳定、顺序固定的业务流程，优先放进 Service、Chain 或组合 Tool；需要模型根据现场信息选择路径时，再交给 ReAct 循环。</p></section>
+
+      <section id="stream"><p class="section-kicker">用户体验</p><h2>只返回最终答案，长任务会像“卡住了”。</h2><p>当前仓库的 <code class="inline-code">Generate</code> 调用只返回最终回复，适合第一版。任务变长后，可以把状态流式返回前端，但展示的是可理解的执行状态，不是模型的私有推理文本。</p><div class="flow-compare"><div><b>适合展示</b><p>正在查询学生<br />正在读取成绩<br />正在生成报告</p></div><div><b>不应直接展示</b><p>完整内部推理<br />数据库错误堆栈<br />Token 与敏感参数</p></div></div><div class="page-summary"><p class="section-kicker">本页总结</p><ol><li>Tool Call 与 Tool Result 都会进入 Agent 消息闭环。</li><li>会话历史帮助理解上下文，但业务事实必须重新查询。</li><li>开发环境通过 Vite Proxy 转发 API，后端不需要默认开放跨域。</li><li>稳定流程应下沉到 Service、Chain 或组合 Tool，不要全交给模型编排。</li><li>长任务可以流式展示状态，但不能暴露敏感信息和内部推理。</li></ol><blockquote>下一章：把仓库中的 Skill 交给外部 Agent，让同一套业务能力跨进程复用。</blockquote></div></section>
+
+
+      <section id="practice"><p class="section-kicker">小练习</p><h2>记录两次查询和一次停止。</h2><ol><li>输入“查询张三的成绩”，按顺序记录每个工具的名称、参数和返回值。</li><li>继续输入“他最低分的是哪门课”，检查“他”是否来自同一会话。</li><li>让查询工具返回超时，检查服务是否停止并说明失败。</li></ol><p><strong>完成标准：</strong>能区分模型发出的调用请求与工具实际执行结果；工具失败时，回答不补写成绩。</p></section>
+
+      <footer class="chapter-footer"><a href="chapter-03-prompt-chain.html">← Chapter 3：Prompt 与 Chain</a><a class="next-question" href="chapter-05-skill-api.html">Chapter 5：Skill 与外部 Agent →</a></footer>
+    </article></main>
+    <footer>服务端 Agent 开发实践 · 从 Eino 编排到效果验证</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script><script src="../../../assets/vendor/prism/components/prism-go.min.js"></script><script src="../../../assets/vendor/mermaid/mermaid.min.js"></script><script src="../../../assets/js/diagrams.js"></script><script src="../../../assets/js/code-highlight.js"></script><script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

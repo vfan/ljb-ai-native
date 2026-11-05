@@ -1,0 +1,125 @@
+.ai-learn-card { margin:22px 0; padding:26px 28px; border:1px solid #c9d7ef; border-radius:10px; background:#f2f6fd; }
+.ai-learn-card h2 { margin-top:0; }
+.ai-learn-card h3 { margin:20px 0 6px; font-size:16px; color:var(--ink); }
+.ai-learn-card .code-block { margin:10px 0 14px; }
+.ai-learn-card .code-block pre { white-space:pre-wrap; }
+.ai-learn-card .section-kicker { color:#3d63a8; }
+.ai-learn-tips { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px; }
+.ai-learn-tips > div { padding:16px 18px; border-radius:8px; background:var(--surface); border:1px solid var(--line); }
+.ai-learn-tips h3 { margin:0 0 6px; }
+.ai-learn-tips p { margin:0; font-size:14px; }
+.ai-learn-tips .verify { border-top:3px solid var(--accent); }
+.ai-learn-tips .pitfall { border-top:3px solid #d77766; }
+
+.ai-native-chapter-page .chapter p a { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+.comparison.level-table th:first-child,.comparison.level-table td:first-child { white-space:nowrap; }
+
+.before-after.neutral .before,.before-after.neutral .after { border-top:3px solid #7d93bd; }
+
+.risk-ladder { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0; }
+.risk-ladder > div { padding:18px; border-radius:9px; border:1px solid var(--line); background:var(--surface); }
+.risk-ladder h3 { margin:0 0 4px; font-size:17px; }
+.risk-ladder .risk-tag { display:inline-block; margin-bottom:10px; padding:2px 8px; border-radius:5px; font:700 12px ui-monospace,monospace; }
+.risk-ladder p { margin:6px 0 0; font-size:14px; }
+.risk-ladder .low { border-top:3px solid var(--accent); }
+.risk-ladder .low .risk-tag { background:#dff2e9; color:#125f45; }
+.risk-ladder .mid { border-top:3px solid #d8b56c; }
+.risk-ladder .mid .risk-tag { background:#fff0bd; color:#76520b; }
+.risk-ladder .high { border-top:3px solid #d77766; }
+.risk-ladder .high .risk-tag { background:#fbe3de; color:#8f3728; }
+
+.misconception-list { display:grid; gap:12px; margin:18px 0; }
+.misconception-list article { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--surface); }
+.misconception-list article > div { padding:16px 18px; }
+.misconception-list .myth { border-right:1px solid var(--line); background:#fff6f4; }
+.misconception-list h3 { margin:0 0 6px; font-size:13px; font-family:ui-monospace,monospace; letter-spacing:.5px; }
+.misconception-list .myth h3 { color:#b14a37; }
+.misconception-list .truth h3 { color:var(--accent); }
+.misconception-list p { margin:0; font-size:14px; color:var(--ink); }
+
+.lab-step { margin:26px 0; padding:24px 26px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.lab-step > h3 { display:flex; align-items:center; gap:10px; margin:0 0 10px; font-size:20px; }
+.lab-step .step-no { display:inline-grid; place-items:center; min-width:34px; height:34px; padding:0 8px; border-radius:8px; background:var(--accent); color:#fff; font:700 14px ui-monospace,monospace; }
+.lab-step h4 { margin:18px 0 6px; font-size:15px; }
+.lab-step .code-block pre { white-space:pre-wrap; }
+.lab-checks { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:16px; }
+.lab-checks > div { padding:14px 16px; border:1px solid var(--line); border-radius:8px; background:var(--paper, transparent); }
+.lab-checks h4 { margin:0 0 6px; font-size:14px; }
+.lab-checks ul { margin:0; padding-left:18px; font-size:14px; }
+.lab-checks li + li { margin-top:4px; }
+.lab-checks .accept { border-top:3px solid var(--accent); }
+.lab-checks .review { border-top:3px solid #d8b56c; }
+.lab-checks .mistake { border-top:3px solid #d77766; }
+.lab-commit { margin:14px 0 0; padding:10px 14px; border-radius:6px; background:#eef3ee; font-size:14px; }
+
+.dark .lab-commit { background:#1c2a22; }
+.dark .ai-learn-card { background:#172234; border-color:#2f4569; }
+.dark .ai-learn-card .section-kicker { color:#8fb0ea; }
+.dark .misconception-list .myth { background:#2e1f1c; }
+.dark .risk-ladder .low .risk-tag { background:#183d2d; color:#b5eed1; }
+.dark .risk-ladder .mid .risk-tag { background:#40310d; color:#ffe19a; }
+.dark .risk-ladder .high .risk-tag { background:#4a2924; color:#ffc6b9; }
+
+/* part transition pages */
+.part-main { max-width:960px; margin:auto; padding:34px 28px 90px; }
+.part-progress { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:56px; }
+.part-progress a { display:flex; flex-direction:column; gap:4px; padding:10px 12px 0; border-top:3px solid var(--line); color:var(--muted); font-size:13px; line-height:1.35; }
+.part-progress a span { font:800 11px ui-monospace,monospace; letter-spacing:.6px; }
+.part-progress a.done { border-top-color:var(--accent-weak); }
+.part-progress a.current { border-top-color:var(--accent); color:var(--ink); font-weight:760; }
+.part-progress a.current span,.part-progress a:hover { color:var(--accent); }
+.part-hero { position:relative; isolation:isolate; padding:20px 0 48px; border-bottom:1px solid var(--line); }
+.part-big-number { position:absolute; top:-18px; right:0; margin:0; color:var(--accent-weak); font:900 clamp(110px,18vw,200px)/1 ui-monospace,monospace; letter-spacing:-6px; z-index:-1; }
+.part-hero h1 { margin:0; font-size:clamp(36px,5.4vw,60px); line-height:1.12; letter-spacing:-2px; }
+.part-question { max-width:680px; margin:24px 0 0; padding-left:16px; border-left:3px solid var(--accent); color:var(--ink); font-size:21px; font-weight:650; line-height:1.5; }
+.part-main > section { margin:44px 0; }
+.part-bridge p:last-child { max-width:760px; margin:0; color:var(--muted); font-size:17px; }
+.part-chapters .section-heading h2 { margin-bottom:18px; }
+.part-outcomes ul { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:0; padding:0; list-style:none; }
+.part-outcomes li { padding:16px 18px 16px 44px; position:relative; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--muted); font-size:15px; }
+.part-outcomes li::before { content:'✓'; position:absolute; left:17px; top:15px; color:var(--accent); font-weight:900; }
+.part-note { padding:20px 24px; border-radius:10px; border:1px solid #e3cf9f; background:#fbf5e6; }
+.part-note p:last-child { margin:0; color:var(--ink); }
+.dark .part-note { background:#2a2618; border-color:#5a4d2c; }
+.part-main .chapter-footer { margin-top:56px; }
+.chapter-dropdown a.part { margin-top:6px; border-top:1px solid var(--line); border-radius:0 0 10px 10px; }
+.chapter-dropdown a.part span { color:var(--accent); }
+.chapter-dropdown a.part strong { font-weight:850; }
+
+/* course homepage：首页只有「你会做出什么」一份清单，章节清单交给部分导览页 */
+.ai-native-roadmap.home { padding-top:30px; padding-bottom:40px; }
+.ai-native-roadmap .hero { padding:10px 0 18px; }
+.ai-native-roadmap .hero h1 { font-size:clamp(30px,4.2vw,48px); line-height:1.1; letter-spacing:-1.8px; }
+.ai-native-roadmap .hero-copy { margin:14px 0 18px; font-size:17px; line-height:1.6; }
+.parts-list { display:flex; flex-direction:column; gap:24px; }
+/* 卡片用 --shadow 浮起（与 .course-card 同一套），不然只靠 1px 淡边框 + 间距
+   分不开：#fffefa 的卡面压在 #f5f4ef 的页面上，RGB 只差 10。 */
+.roadmap-part { display:grid; grid-template-columns:46px minmax(0,1fr); gap:16px; align-items:start; padding:15px 20px; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:var(--shadow); }
+.roadmap-part:hover .roadmap-title a { color:var(--accent); }
+/* 深色模式 --shadow 是 none，而卡面 #18221e 与页面 #101714 只差 10，
+   全靠这层暗影把卡片从底色里托出来 */
+.dark .roadmap-part { box-shadow:0 14px 30px -22px rgba(0,0,0,.9); }
+.roadmap-no { color:var(--accent); font:900 24px/1.2 ui-monospace,monospace; letter-spacing:-1px; }
+.roadmap-title { margin:0; color:var(--ink); font-size:19px; font-weight:800; line-height:1.3; letter-spacing:-.4px; }
+.roadmap-q { margin:3px 0 0; color:var(--muted); font-size:13.5px; line-height:1.5; }
+.roadmap-body .roadmap-yield { margin:8px 0 0; color:var(--ink); font-size:13.5px; line-height:1.55; }
+.roadmap-yield strong { display:inline-block; margin-right:8px; padding:1px 7px; border-radius:999px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:800; letter-spacing:.6px; vertical-align:1.5px; }
+
+
+@media(max-width:760px) {
+  .ai-learn-tips,.risk-ladder,.misconception-list article,.lab-checks { grid-template-columns:1fr; }
+  .misconception-list .myth { border-right:0; border-bottom:1px solid var(--line); }
+  .part-main { padding:22px 18px 60px; }
+  .part-progress { grid-template-columns:repeat(5,minmax(0,1fr)); margin-bottom:34px; }
+  .part-progress a { font-size:0; padding-top:8px; }
+  .part-progress a span { font-size:11px; }
+  .part-outcomes ul { grid-template-columns:1fr; }
+}
+
+/* 第三列只有 168px，正文到 720px 宽都还有 430px 以上，所以三列保持到这里 */
+@media(max-width:720px) {
+  .roadmap-part { grid-template-columns:30px minmax(0,1fr); gap:12px; padding:14px 16px; }
+  .parts-list { gap:18px; }
+  .roadmap-no { font-size:19px; }
+  .roadmap-title { font-size:17px; }
+}

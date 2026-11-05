@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>第 1 章：插件是什么，什么时候该写插件 · DSH 插件开发</title>
+    <meta name="description" content="先判断该不该写插件：接入方式决定方案，维护成本决定取舍。" />
+    <link rel="stylesheet" href="../../../assets/vendor/prism/themes/prism-okaidia.css" />
+    <link rel="stylesheet" href="../../../assets/css/main.css" />
+    <link rel="stylesheet" href="../../../assets/css/dsh-plugin.css" />
+  </head>
+  <body data-course="dsh-plugin" data-chapter="01" class="dsh-course-page dsh-chapter-page">
+    <header class="topbar">
+      <a class="brand" href="../../../index.html"><span class="brand-mark">插</span><span>DSH 插件开发</span></a>
+      <div class="topbar-actions"><a class="platform-link" href="../../../index.html">课程平台</a><button class="chapter-switch" type="button" data-chapter-menu aria-haspopup="menu" aria-expanded="false">Chapter 1 · 插件是什么</button><button class="icon-button" data-theme-toggle aria-label="切换深色模式">◐</button></div>
+    </header>
+
+    <main class="chapter-layout dsh-layout">
+      <nav class="chapter-nav" aria-label="本页内容"><p>本章内容</p><a href="#s1">从一个提醒需求开始</a>
+        <a href="#s2">什么是插件？</a>
+        <a href="#s3">安装插件意味着什么？</a>
+        <a href="#s4">插件、Skill、工具、MCP、CLI 的关系</a>
+        <a href="#s5">什么时候该写插件——先看能力，再看成本</a>
+        <a href="#s6">练习</a>
+        <a href="#takeaway">带走句</a></nav>
+      <article class="chapter dsh-chapter">
+        <header class="chapter-header">
+          <p class="eyebrow">CHAPTER 01 · PLUGIN / TRUST BOUNDARY</p>
+          <p class="page-number">01</p>
+          <h1>插件是什么，<br /><em>什么时候该写插件</em></h1>
+          <p class="lead">先判断该不该写插件：接入方式决定方案，维护成本决定取舍。</p>
+          <div class="dsh-objectives"><p class="section-kicker">本章目标</p><ul><li>判断一个需求应该用什么方案实现（脚本、Skill、插件，还是修改宿主源码）。</li><li>说清楚安装一个插件意味着承担什么信任与安全责任。</li></ul></div>
+          
+        </header>
+
+        <section id="s1"><p class="section-kicker">第 1 节</p><h2>从一个提醒需求开始</h2><p>你让 AI 编程助手修改功能。它正在读代码、改文件、运行测试。你切到其他窗口，回来后才发现：AI 已经停了几分钟，正在等待你确认操作。</p><p>于是有了一个需求：</p><aside class="dsh-quote"><p><strong>任务结束，或者需要用户作决定时，自动提醒。</strong></p></aside><p>如果只想在某一次任务完成后播放声音，可以让 Agent 执行播放脚本。但如果希望各种任务都能自动提醒，就需要一个可靠的触发机制：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>问题</th><th>需要的能力</th></tr></thead><tbody><tr><td>什么时候提醒？</td><td>识别运行状态的变化</td></tr><tr><td>怎样提醒？</td><td>播放声音或显示通知</td></tr><tr><td>怎样避免重复提醒？</td><td>记录已经处理过的状态</td></tr><tr><td>用户怎样调整？</td><td>提供开关、音量等配置</td></tr></tbody></table></div><p>宿主已有功能或钩子可能满足需求；如果没有，可以研究插件扩展。</p></section>
+
+        <section id="s2"><p class="section-kicker">第 2 节</p><h2>什么是插件？</h2><p><strong>插件是宿主应用按照约定加载的扩展单元，用来增加或改变应用的能力。</strong> 一个扩展单元通常是一段程序，也可以只是组合已有插件的纯配置包。</p><p>宿主就是加载并运行插件的应用。</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>宿主应用</th><th>插件功能示例</th></tr></thead><tbody><tr><td>浏览器</td><td>翻译网页、管理标签页</td></tr><tr><td>代码编辑器</td><td>格式化代码、显示 Git 历史</td></tr><tr><td>DeepSeek Harness（命令为 <code class="inline-code">dsh</code>）</td><td>增加工具、通知、界面和服务</td></tr></tbody></table></div><p>宿主通过扩展接口让插件参与运行；插件则遵守入口、依赖、配置和加载方式等约定。<strong>一段代码只有被宿主正确加载，才能作为插件发挥作用。</strong></p><p>dsh 用 Cordis 作为插件框架组织插件，其许多内置能力也由插件组合而成。</p><p>插件可以同时包含多种能力：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>类型</th><th>作用</th><th>示例</th></tr></thead><tbody><tr><td>工具扩展</td><td>增加 Agent 可以调用的操作</td><td>查询天气、读取特定数据</td></tr><tr><td>事件响应</td><td>在某件事发生时执行程序</td><td>工具执行后记录日志</td></tr><tr><td>界面扩展</td><td>增加用户可操作的界面</td><td>设置面板、侧边栏按钮</td></tr><tr><td>服务扩展</td><td>提供其他插件可使用的程序能力</td><td>统一的数据访问服务</td></tr></tbody></table></div></section>
+
+        <section id="s3"><p class="section-kicker">第 3 节</p><h2>安装插件意味着什么？</h2><p><strong>安装插件是在引入程序代码，需要信任它的来源和行为。</strong></p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>执行位置</th><th>需要理解的边界</th></tr></thead><tbody><tr><td>安装脚本</td><td>可能在安装阶段执行代码</td></tr><tr><td>Host：宿主端</td><td>以宿主进程权限运行，可读写文件、启动进程、访问网络，<strong>不经过 Agent 工具审批路径</strong></td></tr><tr><td>Client：客户端</td><td>在浏览器页面环境中运行，受浏览器规则限制</td></tr><tr><td>Agent 工具调用</td><td>按对应的工具执行与策略机制处理</td></tr></tbody></table></div><p>使用第三方插件前应确认：来源是否可信、需要哪些能力、安装的版本或提交、是否兼容当前 dsh 版本。</p></section>
+
+        <section id="s4"><p class="section-kicker">第 4 节</p><h2>插件、Skill、工具、MCP、CLI 的关系</h2><p><strong>Skill 主要提供 Agent 做事的方法和资源；插件是宿主加载的程序扩展。</strong> 两者可以配合——插件还可以包含并注册 Skill（作为 Skill 的载体）。</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>概念</th><th>本质</th><th>主要作用</th></tr></thead><tbody><tr><td>Skill</td><td>方法、规则和配套资源</td><td>指导任务怎样完成</td></tr><tr><td>工具</td><td>一项可调用操作</td><td>执行具体动作</td></tr><tr><td>MCP</td><td>应用连接外部能力的协议</td><td>规范能力发现与交互</td></tr><tr><td>CLI</td><td>程序的命令行接口</td><td>通过命令执行操作</td></tr><tr><td>插件</td><td>宿主加载的扩展单元</td><td>为应用接入能力或行为</td></tr></tbody></table></div><p>同样能播放声音，实现方式却不同：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>比较项</th><th>Skill 配合播放脚本</th><th>自动提醒插件</th></tr></thead><tbody><tr><td>谁触发？</td><td>Agent 按流程执行</td><td>程序根据状态或事件执行</td></tr><tr><td>是否依赖模型执行这一步？</td><td>通常依赖</td><td>可以不依赖</td></tr><tr><td>是否能提供设置界面？</td><td>需要其他机制配合</td><td>可以接入宿主 UI 扩展接口</td></tr></tbody></table></div><p>这不是"哪个更高级"，而是<strong>触发机制与集成方式不同</strong>。它们不是五选一，而是可以组合的不同部分。</p><p>插件安装后，也不一定出现在模型工具列表中：触发方式可以是模型调用、程序响应事件、用户操作界面或定时执行。没有模型参与的程序逻辑本身不需要模型，但插件提供的工具描述、提示内容仍可能带来 Token 开销。</p></section>
+
+        <section id="s5"><p class="section-kicker">第 5 节</p><h2>什么时候该写插件——先看能力，再看成本</h2><h3>1. 能力边界：三个案例</h3><p><strong>案例一：批量转换视频。</strong> 已有 FFmpeg 和终端执行能力时，用 Skill 描述流程 + CLI 执行即可，<strong>不需要专门开发 dsh 插件</strong>。</p><p><strong>案例二：在工具结果旁固定显示按钮。</strong> 这改变宿主界面，Skill 做不到。路径：已有按钮直接用 → 有 UI 扩展接口写插件 → 都没有则改宿主源码或调整方案。</p><p><strong>案例三：各种任务都自动提醒。</strong> 单独的播放命令只负责"发出声音"，不负责识别"什么时候该响"。先检查宿主是否已有提醒设置或运行钩子；没有，再研究插件。</p><p><strong>选择插件的依据，是需要怎样接入应用，而不是任务看起来有多复杂。</strong></p><h3>2. 成本清单：写插件的代价</h3><p>能力上"能做"，不代表"值得做"。决定动手前，把这些成本摆上桌：</p><div class="dsh-table-wrap"><table class="comparison"><thead><tr><th>成本项</th><th>说明</th></tr></thead><tbody><tr><td>版本跟进</td><td>宿主接口（事件签名、插槽名、路由契约）可能随版本变化，插件要跟着维护</td></tr><tr><td>运行开销</td><td>事件监听在宿主进程内执行，高频事件上的重逻辑会拖慢宿主</td></tr><tr><td>兼容声明</td><td>每个版本都要记录"实际验证过的范围"，不能笼统说"兼容"</td></tr><tr><td>安全责任</td><td>Host 插件以进程权限运行，出错或被滥用的后果由插件承担</td></tr><tr><td>卸载语义</td><td>要自己定义清楚：卸载撤销什么、保留什么，用户数据怎么处理</td></tr></tbody></table></div><p>一个生命周期只有两周的一次性任务，写插件的维护成本几乎一定高于写一个脚本。</p></section>
+
+        <section id="s6"><p class="section-kicker">第 6 节</p><h2>练习</h2><p>不写代码，判断下面三个需求该用什么方案，并说明理由：</p><ol><li>把当前会话导出成 PDF。</li><li>每天早上九点自动拉取公司内部系统数据，汇总后发送邮件。</li><li>在 dsh 设置页增加一个"默认音量"滑块。</li></ol><p>完成后回答：</p><ol><li>插件和 Skill 的触发机制有什么不同？</li><li>安装一个 Host 插件，等于给了它什么权限？</li><li>"能做"和"值得做"之间隔着哪五项成本？</li></ol></section>
+
+        <section class="page-summary dsh-summary" id="takeaway"><p class="section-kicker">本章带走句</p><blockquote><p>先问"该不该"，再问"怎么写"——接入方式决定方案，维护成本决定取舍；装插件就是给它宿主进程权限。</p></blockquote></section>
+
+        <footer class="chapter-footer"><a href="../index.html">← 课程首页</a><a class="next-question" href="chapter-02.html">运行环境 →</a></footer>
+      </article>
+    </main>
+    <footer>DSH 插件开发 · 从看懂一个插件到交付一个插件</footer>
+    <script src="../../../assets/vendor/prism/prism.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-typescript.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-bash.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-json.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-yaml.min.js"></script>
+    <script src="../../../assets/vendor/prism/components/prism-markdown.min.js"></script>
+    <script src="../../../assets/js/code-highlight.js"></script>
+    
+    <script src="../../../assets/js/common.js"></script>
+  </body>
+</html>

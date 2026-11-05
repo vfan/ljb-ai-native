@@ -1,0 +1,263 @@
+/* DSH 插件开发课程：共用样式之上的课程皮肤与专属组件 */
+
+/* 课程主色：靛蓝。main.css 里所有走 --accent 的组件（品牌块、按钮、
+   章节目录当前项、链接）都会跟着换色，不需要逐处覆盖。 */
+body.dsh-course-page {
+  --accent: #4b4fd0;
+  --accent-weak: #eef0fd;
+  --dsh-soft: #eef0fd;
+  --dsh-line: #d7d9f6;
+  --dsh-mute-line: #c3c7ee;
+}
+body.dark.dsh-course-page {
+  --accent: #a8b0ff;
+  --accent-weak: #1f2149;
+  --dsh-soft: #1d2044;
+  --dsh-line: #343a72;
+  --dsh-mute-line: #454c8c;
+}
+
+/* ---------------- 章节页 ---------------- */
+
+.dsh-chapter { max-width: 860px; }
+.dsh-chapter .chapter-header { position: relative; padding: 6px 0 38px 84px; }
+.dsh-chapter .chapter-header .eyebrow { margin-bottom: 8px; }
+.dsh-chapter .chapter-header .page-number {
+  position: absolute; left: 0; top: 0; margin: 0;
+  color: var(--accent);
+  font: 800 46px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: -2px;
+}
+.dsh-chapter .chapter-header h1 {
+  margin: 0;
+  font-size: clamp(33px, 4.2vw, 50px);
+  line-height: 1.12;
+  letter-spacing: -1.9px;
+}
+.dsh-chapter .chapter-header h1 em { color: var(--accent); font-style: normal; }
+.dsh-chapter .chapter-header .lead {
+  max-width: 660px; margin: 18px 0 0;
+  color: var(--muted); font-size: 19px; line-height: 1.55;
+}
+.dsh-chapter .chapter-header .dsh-intro-p { margin: 12px 0 0; }
+.dsh-chapter .section-kicker, .dsh-chapter .page-summary .section-kicker { color: var(--accent); }
+.dsh-chapter .chapter .lead { color: var(--muted); }
+
+/* 本章目标 */
+.dsh-objectives {
+  margin: 22px 0 0; padding: 20px 22px;
+  border: 1px solid var(--dsh-line); border-radius: 10px;
+  background: var(--dsh-soft);
+}
+.dsh-objectives .section-kicker { margin: 0 0 10px; }
+.dsh-objectives ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.dsh-objectives li {
+  position: relative; padding-left: 24px;
+  color: var(--ink); font-size: 15px; line-height: 1.6;
+}
+.dsh-objectives li::before {
+  content: '✓'; position: absolute; left: 0; top: 0;
+  color: var(--accent); font-weight: 900;
+}
+
+/* 七环节：本章处理哪几格 */
+.dsh-stage-map { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 24px; }
+.dsh-stage-label {
+  color: var(--muted);
+  font: 800 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .7px; text-transform: uppercase;
+}
+.dsh-stage-track { display: flex; flex-wrap: wrap; gap: 6px; }
+.dsh-stage {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); color: var(--muted);
+  font-size: 12px; line-height: 1.2;
+}
+.dsh-stage b { color: var(--muted); font: 800 10px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.dsh-stage.active {
+  border-color: var(--accent); background: var(--accent-weak);
+  color: var(--accent); font-weight: 800;
+}
+.dsh-stage.active b { color: var(--accent); }
+
+/* 引用：普通提示 / 停靠点 / 章首说明 */
+.dsh-quote, .dsh-note, .dsh-pause {
+  margin: 22px 0; padding: 17px 21px;
+  border: 1px solid var(--dsh-line); border-radius: 10px;
+  background: var(--dsh-soft);
+}
+.dsh-quote { border-left: 3px solid var(--dsh-mute-line); background: var(--surface); }
+.dsh-note { border-left: 3px solid var(--accent); }
+.dsh-pause { border: 1px dashed var(--accent); background: transparent; }
+.dsh-pause::before {
+  content: 'CHECKPOINT · 停靠点';
+  display: block; margin-bottom: 7px;
+  color: var(--accent);
+  font: 800 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .8px;
+}
+.dsh-quote p, .dsh-note p, .dsh-pause p {
+  margin: 0; color: var(--ink); font-size: 15px; line-height: 1.7;
+}
+.dsh-quote p { color: var(--muted); }
+
+/* 表格：窄屏横向滚动，不挤压单元格 */
+.dsh-table-wrap {
+  max-width: 100%; margin: 22px 0; overflow-x: auto;
+  border-radius: 10px;
+}
+.dsh-table-wrap .comparison { margin: 0; }
+.dsh-table-wrap .comparison th, .dsh-table-wrap .comparison td { vertical-align: top; }
+
+/* 本章带走句 */
+.dsh-chapter .page-summary.dsh-summary {
+  margin-top: 52px;
+  background: var(--dsh-soft); border-color: var(--dsh-line);
+}
+.dsh-chapter .page-summary blockquote {
+  margin-top: 0; border-left: 3px solid var(--accent);
+  background: var(--surface);
+  font-size: 19px; line-height: 1.6;
+}
+.dsh-chapter .page-summary blockquote p { margin: 0; }
+
+.dsh-rule { margin: 34px 0; border: 0; border-top: 1px solid var(--line); }
+
+/* ---------------- 课程首页 ---------------- */
+
+.dsh-launch-page .launch-hero h1 { letter-spacing: -3px; }
+.dsh-launch-page .launch-hero h1 em { color: var(--accent); font-style: normal; }
+.dsh-launch-page .course-position {
+  border-color: var(--dsh-line); background: var(--accent-weak);
+  color: var(--accent) !important;
+}
+.dsh-launch-page .system-brief { background: #12142f; }
+.dsh-launch-page .system-brief .brief-stack, .dsh-launch-page .system-brief .brief-stack b { color: #9aa2e8; }
+.dsh-launch-page .system-brief::after { border-color: #4b519e; }
+.dsh-launch-page .system-brief p { color: #b9bde0; }
+.dsh-launch-page .system-brief code { color: #dfe3ff; }
+.dsh-launch-page .system-brief .brief-stack span { border-color: #444a83; }
+.dsh-launch-page .system-brief .brief-status { color: #b3b8e8; }
+.dsh-launch-page .system-brief .brief-status i { background: #9aa2ff; box-shadow: 0 0 0 4px rgba(154,162,255,.14); }
+
+/* 全书主图：七个环节 */
+.dsh-map-grid {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px; margin-top: 24px;
+}
+.dsh-map-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 15px 12px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface);
+}
+.dsh-map-card b {
+  color: var(--accent);
+  font: 800 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .5px;
+}
+.dsh-map-card strong { color: var(--ink); font-size: 14px; letter-spacing: -.2px; }
+.dsh-map-card span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.dsh-map-card small {
+  margin-top: auto; padding-top: 6px;
+  color: var(--accent); font-size: 11px; font-weight: 700;
+}
+
+/* 章节地图 */
+.dsh-chapter-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px; margin-top: 22px;
+}
+.dsh-chapter-grid > * { min-width: 0; }
+.dsh-chapter-card {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 22px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); box-shadow: var(--shadow);
+  transition: border-color .18s ease, transform .18s ease;
+}
+.dsh-chapter-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.dsh-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dsh-card-no {
+  color: var(--accent);
+  font: 800 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .5px;
+}
+.dsh-card-stages { color: var(--muted); font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.dsh-chapter-card h3 { margin: 0; color: var(--ink); font-size: 20px; line-height: 1.3; letter-spacing: -.5px; }
+.dsh-chapter-card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.dsh-card-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-top: 6px; padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--accent); font: 700 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* 适合谁 / 环境 */
+.dsh-env-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 16px; margin-top: 22px; }
+.dsh-env-grid > * { min-width: 0; }
+.dsh-env-card {
+  min-width: 0; padding: 24px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface);
+}
+.dsh-env-card h3 { margin: 0 0 10px; font-size: 18px; letter-spacing: -.4px; }
+.dsh-env-card ul { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+.dsh-env-card li {
+  position: relative; padding-left: 22px;
+  color: var(--muted); font-size: 14.5px; line-height: 1.6;
+}
+.dsh-env-card li::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-weight: 800; }
+.dsh-env-card li, .dsh-env-card p, .dsh-conventions p { overflow-wrap: anywhere; }
+.dsh-env-card pre {
+  max-width: 100%; margin: 0; padding: 16px;
+  border-radius: 9px; background: var(--code); color: #dce9e1;
+  font: 12px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow: auto;
+}
+.dsh-env-card pre span { color: #f2ad76; }
+.dsh-env-card .dsh-env-note { margin: 12px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+.dsh-conventions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+.dsh-conventions > div {
+  padding: 20px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface);
+}
+.dsh-conventions b {
+  display: inline-block; margin-bottom: 8px;
+  color: var(--accent); font: 800 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .5px;
+}
+.dsh-conventions p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+@media (max-width: 1080px) {
+  .dsh-map-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .dsh-chapter-grid, .dsh-env-grid { grid-template-columns: minmax(0, 1fr); }
+  .dsh-conventions { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .dsh-chapter .chapter-header { padding: 4px 0 30px 54px; }
+  .dsh-chapter .chapter-header .page-number { font-size: 34px; letter-spacing: -1px; }
+  .dsh-chapter .chapter-header h1 { font-size: 32px; letter-spacing: -1.3px; }
+  .dsh-chapter .chapter-header .lead { font-size: 17px; }
+  .dsh-stage-map { align-items: flex-start; }
+  .dsh-stage-track { gap: 5px; }
+  .dsh-objectives { padding: 17px 18px; }
+  .dsh-map-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dsh-chapter-card { padding: 18px; }
+  .dsh-chapter-card h3 { font-size: 18px; }
+  .dsh-env-card { padding: 19px; }
+}
+
+/* 深色模式：main.css 里带绿色底色的组件在这里换成靛蓝底 */
+.dark .dsh-chapter .page-summary { background: var(--dsh-soft); border-color: var(--dsh-line); }
+.dark .dsh-chapter .page-summary blockquote { background: var(--surface); }
+.dark .dsh-objectives { background: var(--dsh-soft); border-color: var(--dsh-line); }
+.dark .dsh-quote { background: var(--surface); border-color: var(--dsh-line); border-left-color: var(--dsh-mute-line); }
+.dark .dsh-note { background: var(--dsh-soft); border-color: var(--dsh-line); }
+.dark .dsh-conventions > div, .dark .dsh-env-card { background: var(--surface); }
+.dark .dsh-launch-page .system-brief { background: #0d1020; }
