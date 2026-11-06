@@ -701,10 +701,10 @@ table.expect thead th { padding-top: 0; }
 
 .drawer-body { padding: 20px 26px 48px; display: flex; flex-direction: column; gap: 18px; }
 
-.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 
-.result-card { padding: 16px; }
-.result-card h3 { margin: 0; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.result-card { min-width: 0; padding: 16px; overflow-wrap: anywhere; }
+.result-card h3 { margin: 0; font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .result-card .raw {
   margin: 12px 0 0;
@@ -715,6 +715,8 @@ table.expect thead th { padding-top: 0; }
   font-family: var(--mono);
   font-size: 11.5px;
   line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   overflow-x: auto;
   max-height: 260px;
   border: 1px solid var(--code-line);

@@ -594,7 +594,7 @@ function judgeLabel(source) {
   return { heuristic: '本地启发式裁判', llm: 'DeepSeek 裁判', skipped: '已跳过语义评分' }[source] || source;
 }
 
-function resultCard(title, runId, promptId, results, promptNameValue) {
+function resultCard(title, runId, results) {
   const result = results?.[0];
   if (!result) {
     return `<section class="panel result-card"><h3>${esc(title)}</h3><div class="empty">这次运行没有该样本的结果</div></section>`;
@@ -604,11 +604,13 @@ function resultCard(title, runId, promptId, results, promptNameValue) {
   const soft = result.soft_issues || [];
   const checks = result.rule?.checks || [];
   const judge = result.judge || {};
+  const summary = state.boot?.runs?.find((item) => item.run.id === runId);
+  const name = summary?.prompt_name || promptName(summary?.run.prompt_id || runId);
 
   return `
     <section class="panel result-card">
       <h3>${esc(title)} ${verdictPill(result.verdict === 'pass')}
-        <span class="hint" style="font-weight:400">${esc(promptNameValue || promptName(promptId))}</span>
+        <span class="hint" style="font-weight:400">${esc(name)}</span>
       </h3>
       <p class="hint mono" style="margin:6px 0 0">质量 ${result.quality} · ${ms(result.latency_ms)} · ${money(result.cost)}</p>
 
@@ -667,8 +669,8 @@ async function openCase(slug) {
           <div class="transcript">${highlight(evalCase.transcript, quotes)}</div>
         </div>
         <div class="result-grid">
-          ${resultCard('基线 A', baseline, data.baseline?.run_id, data.baseline?.results)}
-          ${resultCard('候选 B', candidate, data.candidate?.run_id, data.candidate?.results)}
+          ${resultCard('基线 A', baseline, data.baseline?.results)}
+          ${resultCard('候选 B', candidate, data.candidate?.results)}
         </div>
         <div class="panel">
           <div class="panel-head"><h2 style="font-size:13px">期望行为</h2><span class="hint">约束而非唯一答案</span></div>
