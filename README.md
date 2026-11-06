@@ -4,7 +4,7 @@
 
 ## 课程
 
-- [AI Native 产品设计实践](courses/ai-native-product-design-practice/index.html)
+- [AI Native 产品设计实践](courses/ai-native-product-design-practice/index.html)：包含 32 页产品基础，后接 AI 产品设计 11 讲，共 84 屏。
 - [全栈 Agent 开发实践](courses/go-agent-engineering/index.html)
 - [DSH 插件开发](courses/dsh-plugin/index.html)
 

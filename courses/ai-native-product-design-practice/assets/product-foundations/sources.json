@@ -1,0 +1,219 @@
+{
+  "source": "在这个时代做产品.pdf",
+  "source_sha256": "7160e02b809c574fe9332dde329b8d40c887e7c53201ff0f8f418ac32ba2238a",
+  "presenter": "SiC",
+  "cover_date": "2026-09-21",
+  "assets": [
+    {
+      "file": "business-canvas.webp",
+      "pdf_page": 9,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        1540,
+        600,
+        3780,
+        1870
+      ],
+      "size": [
+        2240,
+        1270
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "need-exploration.webp",
+      "pdf_page": 14,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        190,
+        540,
+        3680,
+        2000
+      ],
+      "size": [
+        3490,
+        1460
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "need-elements.webp",
+      "pdf_page": 18,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        800,
+        420,
+        3030,
+        1020
+      ],
+      "size": [
+        2230,
+        600
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "need-value.webp",
+      "pdf_page": 20,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        180,
+        600,
+        3620,
+        1870
+      ],
+      "size": [
+        3440,
+        1270
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "value-composition.webp",
+      "pdf_page": 24,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        2040,
+        840,
+        3600,
+        1600
+      ],
+      "size": [
+        1560,
+        760
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "growth-flywheel.jpg",
+      "pdf_page": 37,
+      "embedded_image": "IM220.jpg",
+      "size": [
+        511,
+        432
+      ],
+      "processing": "Original embedded image extracted without re-encoding"
+    },
+    {
+      "file": "activity-needs.webp",
+      "pdf_page": 13,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        0,
+        0,
+        3840,
+        2130
+      ],
+      "size": [
+        3840,
+        2130
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "need-products.webp",
+      "pdf_page": 23,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        2420,
+        500,
+        3660,
+        1700
+      ],
+      "size": [
+        1240,
+        1200
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "product-discovery.webp",
+      "pdf_page": 30,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        360,
+        350,
+        3420,
+        2060
+      ],
+      "size": [
+        3060,
+        1710
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "iteration.webp",
+      "pdf_page": 47,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        360,
+        440,
+        3420,
+        1660
+      ],
+      "size": [
+        3060,
+        1220
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    },
+    {
+      "file": "pirate-funnel.jpg",
+      "pdf_page": 39,
+      "embedded_image": "IM227.jpg",
+      "size": [
+        1024,
+        890
+      ],
+      "processing": "Original embedded image extracted without re-encoding"
+    },
+    {
+      "file": "direction-business-canvas.png",
+      "pdf_page": 33,
+      "render_size": [
+        3840,
+        2160
+      ],
+      "crop_pixels": [
+        2510,
+        970,
+        3620,
+        1690
+      ],
+      "size": [
+        1110,
+        720
+      ],
+      "processing": "PDF rendering and diagram extraction only; no redrawing or content changes"
+    }
+  ],
+  "foundation_slides": 30
+}
